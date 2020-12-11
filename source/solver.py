@@ -1,5 +1,5 @@
 import os, glob, inspect, time, math, torch
-
+import psutil
 import numpy as np
 import matplotlib.pyplot as plt
 import source.loss_functions as lfs
@@ -9,6 +9,9 @@ from itertools import chain
 from sklearn.decomposition import PCA
 from torch.utils.tensorboard import SummaryWriter
 import source.utils as utils
+from memory_profiler import memory_usage
+from time import sleep
+from pytorch_memlab import MemReporter
 PACK_PATH = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/.."
 
 
@@ -144,6 +147,8 @@ def training(neuralnet, dataset, epochs, batch_size):
     
     ref_grad_enc = []
     ref_grad_dec = []
+    
+    
     for name, param in neuralnet.encoder.named_parameters():
         if name.endswith('weight'):
             layer_grad = utils.AverageMeter()
@@ -209,8 +214,10 @@ def training(neuralnet, dataset, epochs, batch_size):
         batch_iter = 0
         while(True):
             batch_iter = batch_iter + 1
-            print("Batch iteration")
-            print(batch_iter)
+           
+            
+            
+            
             x_tr, x_tr_torch, y_tr, y_tr_torch, terminator = dataset.next_train(batch_size)
 
             z_code = neuralnet.encoder(x_tr_torch.to(neuralnet.device))
@@ -312,7 +319,6 @@ def training(neuralnet, dataset, epochs, batch_size):
                 ref_grad_dec[i].update(param.grad, 1)
                 i = i + 1
 
-
             neuralnet.optimizer.step()
             
             z_code = torch2npy(z_code)
@@ -325,7 +331,15 @@ def training(neuralnet, dataset, epochs, batch_size):
               #      l = l +1
                #     if(l==28-2*i):
                 #        ref_grad[i].update(param.grad,1)
-
+                
+            #reporter = MemReporter()
+            #reporter.report()
+            
+            print("Batch iteration is: ")
+            print(batch_iter)
+            
+            print("Percentage of available memory")
+            print(psutil.virtual_memory().available * 100 / psutil.virtual_memory().total)
 
             
             list_enc.append(l_enc)
