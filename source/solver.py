@@ -9,9 +9,8 @@ from itertools import chain
 from sklearn.decomposition import PCA
 from torch.utils.tensorboard import SummaryWriter
 import source.utils as utils
-from memory_profiler import memory_usage
 from time import sleep
-from pytorch_memlab import MemReporter
+import tracemalloc
 PACK_PATH = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/.."
 
 
@@ -160,12 +159,6 @@ def training(neuralnet, dataset, epochs, batch_size):
             layer_grad.avg = torch.zeros_like(param)
             ref_grad_dec.append(layer_grad)
     
-    
-    
-    
-    
-    
-    
     for epoch in range(epochs):
 
         x_tr, x_tr_torch, y_tr, y_tr_torch, _ = dataset.next_train(batch_size=test_size, fix=True) # Initial batch
@@ -174,10 +167,7 @@ def training(neuralnet, dataset, epochs, batch_size):
         x_hat = neuralnet.decoder(z_code.to(neuralnet.device))
         z_code_hat = neuralnet.encoder(x_hat.to(neuralnet.device))
         
-      
-        
-                
-        
+         
         dis_x, features_real = neuralnet.discriminator(x_tr_torch.to(neuralnet.device))
         dis_x_hat, features_fake = neuralnet.discriminator(x_hat.to(neuralnet.device))
 
@@ -243,16 +233,12 @@ def training(neuralnet, dataset, epochs, batch_size):
 
             x_tr_copy.requires_grad = True
             recon_loss = func.mse_loss(x_tr_copy,x_hat_copy)
-            parameter_list_1 = list(neuralnet.encoder.parameters())
-        
-            parameter_list_2 = list(neuralnet.decoder.parameters())
-            grad_loss = 0
-            l_1 = len(parameter_list_1)
-            l_2 = len(parameter_list_2)
+           
           
 
             
             nlayer = 16
+            grad_loss = 0
             target_grad = 0
             k = 0
             for name, param in neuralnet.encoder.named_parameters():
@@ -294,11 +280,7 @@ def training(neuralnet, dataset, epochs, batch_size):
             else:
               grad_loss = grad_loss / nlayer
             
-            
-            
-         
-
-
+  
 
             l_grad = grad_loss
             
@@ -332,8 +314,7 @@ def training(neuralnet, dataset, epochs, batch_size):
                #     if(l==28-2*i):
                 #        ref_grad[i].update(param.grad,1)
                 
-            #reporter = MemReporter()
-            #reporter.report()
+            
             
             print("Batch iteration is: ")
             print(batch_iter)
@@ -341,7 +322,12 @@ def training(neuralnet, dataset, epochs, batch_size):
             print("Percentage of available memory")
             print(psutil.virtual_memory().available * 100 / psutil.virtual_memory().total)
 
-            
+            current, peak = tracemalloc.get_traced_memory()
+
+            print("Current memory usage is MB")
+            print(current/10**6)
+            print("Peak was MB")
+            print(peak/10**6)
             list_enc.append(l_enc)
             list_con.append(l_con)
             list_adv.append(l_adv)

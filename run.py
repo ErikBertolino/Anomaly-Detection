@@ -2,7 +2,7 @@ import os, argparse
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import torch
-
+import tracemalloc
 import source.neuralnet as nn
 import source.datamanager as dman
 import source.solver as solver
@@ -16,12 +16,13 @@ def main():
 
     if(not(torch.cuda.is_available())): FLAGS.ngpu = 0
     device = torch.device("cuda" if (torch.cuda.is_available() and FLAGS.ngpu > 0) else "cpu")
-
+    tracemalloc.start()
     neuralnet = nn.NeuralNet(height=dataset.height, width=dataset.width, channel=dataset.channel, \
         device=device, ngpu=FLAGS.ngpu, \
         ksize=FLAGS.ksize, z_dim=FLAGS.z_dim, learning_rate=FLAGS.lr)
 
     solver.training(neuralnet=neuralnet, dataset=dataset, epochs=FLAGS.epoch, batch_size=FLAGS.batch)
+    
     solver.test(neuralnet=neuralnet, dataset=dataset)
 
 
