@@ -12,7 +12,7 @@ import source.utils as utils
 from time import sleep
 import tracemalloc
 PACK_PATH = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/.."
-
+from pympler import muppy, summary
 
 def make_dir(path):
 
@@ -171,9 +171,10 @@ def training(neuralnet, dataset, epochs, batch_size):
         dis_x, features_real = neuralnet.discriminator(x_tr_torch.to(neuralnet.device))
         dis_x_hat, features_fake = neuralnet.discriminator(x_hat.to(neuralnet.device))
 
-        z_code = torch2npy(z_code)
-        x_hat = np.transpose(torch2npy(x_hat), (0, 2, 3, 1))
-        torch.autograd.set_detect_anomaly(True)
+        #z_code = torch2npy(z_code)
+        #x_hat = np.transpose(torch2npy(x_hat), (0, 2, 3, 1))
+        
+        
         if(neuralnet.z_dim == 2):
             latent_plot(latent=z_code, y=y_tr, n=dataset.num_class, \
                 savename=os.path.join("results", "tr_latent", "%08d.png" %(epoch)))
@@ -244,9 +245,9 @@ def training(neuralnet, dataset, epochs, batch_size):
             for name, param in neuralnet.encoder.named_parameters():
               if name.endswith('weight'):
                   
-                  target_grad = torch.autograd.grad(recon_loss, param, create_graph = True, retain_graph = True)[0]
+                  target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
                   
-                  grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_enc[k].avg.view(-1,1), dim = 0)
+                  grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_enc[k].avg.view(-1,1), dim = 0).item()
                   
                   k = k + 1
                   
@@ -259,9 +260,9 @@ def training(neuralnet, dataset, epochs, batch_size):
             for name, param in neuralnet.decoder.named_parameters():
               if name.endswith('weight'):
                   
-                  target_grad = torch.autograd.grad(recon_loss, param, create_graph = True, retain_graph = True)[0]
+                  target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
                   
-                  grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_dec[j].avg.view(-1,1), dim = 0)
+                  grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_dec[j].avg.view(-1,1), dim = 0).item()
                   
                   j = j + 1
               if j == nlayer:
@@ -287,8 +288,8 @@ def training(neuralnet, dataset, epochs, batch_size):
             
             l_tot = l_tot + grad_loss
             neuralnet.optimizer.zero_grad()
-            l_tot.backward(retain_graph = True)
-            
+            #l_tot.backward(retain_graph = True)
+            l_tot.backward()
             # Update the reference gradient
             l = 0
             for (name, param) in neuralnet.encoder.named_parameters():
@@ -303,8 +304,8 @@ def training(neuralnet, dataset, epochs, batch_size):
 
             neuralnet.optimizer.step()
             
-            z_code = torch2npy(z_code)
-            x_hat = np.transpose(torch2npy(x_hat), (0, 2, 3, 1))
+            #z_code = torch2npy(z_code)
+            #x_hat = np.transpose(torch2npy(x_hat), (0, 2, 3, 1))
 
 
            # for i in range(2):
@@ -328,6 +329,7 @@ def training(neuralnet, dataset, epochs, batch_size):
             print(current/10**6)
             print("Peak was MB")
             print(peak/10**6)
+              
             list_enc.append(l_enc)
             list_con.append(l_con)
             list_adv.append(l_adv)
