@@ -67,13 +67,7 @@ Clone this repository and run following commands to create a conda environment a
 * Numpy 1.17.1  
 * Matplotlib 3.1.1  
 * Scikit Learn (sklearn) 0.21.3  
-* Psutil 5.7.2
 
 ## Reference
 [1] S Akcay, et al. (2018). <a href="https://arxiv.org/abs/1805.06725">Ganomaly: Semi-supervised anomaly detection via adversarial training.</a>. arXiv preprint arXiv:1805.06725.
-[2] @inproceedings{kwon2020backpropagated,
-  title={Backpropagated Gradient Representations for Anomaly Detection},
-  author={Kwon, Gukyeong and Prabhushankar, Mohit and Temel, Dogancan and AlRegib, Ghassan},
-  booktitle={Proceedings of the European Conference on Computer Vision (ECCV)},
-  year={2020}
-}
+[2] Kwon, Gukyeong and Prabhushankar (2020). <a href="https://arxiv.org/abs/2007.09507">Backpropagated Gradient Representations for Anomaly Detection</a>. arXiv preprint arXiv:2007.09507. 
