@@ -17,11 +17,11 @@ Currently, there is a problem with the amount of RAM needed to run the code. Bet
   <p>Graph of GANomaly.</p>
 </div>
 
-##How to run
+###How to run
 <div align="center">
 Clone this repository and run following commands to create a conda environment and install all dependencies.
 ```
-	conda create -n GAN-Grad python=3.6
+	conda create -n GAN-Grad python=3.8
 	conda activate GAN-Grad
 	cd Anomaly-Detection
 	conda install pytorch torchvision -c pytorch
@@ -37,7 +37,10 @@ Clone this repository and run following commands to create a conda environment a
 
 ##Method 
 <div align="center">
+
+
 	One may freely choose the split in the training/validation/test phases of the program. 
+	
 	Train:
 	
 	Validation:
@@ -51,14 +54,12 @@ Clone this repository and run following commands to create a conda environment a
 	<ul>
 	<li>PCA plot of the latent space in the Autoencoder part</li>
 	<li>Histograms for every term in the objective function, for normal and abnormal data</li>
+	<li>Receiver operating characteristic and associated Area Under Curve</li>
 	<li>Clustering of the L_grad, and associated classes.</li>
+	<li>Box plot of loss for every class</li>
 	</ul>
 </div>
 
-<div align="center">
-  <img src="./figures/test-box.png" width="400">
-  <p>Box plot with encoding loss of test procedure.</p>
-</div>
 
 ## Environment
 * Python 3.7.4  
