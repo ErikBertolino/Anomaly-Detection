@@ -125,7 +125,34 @@ def torch2npy(input):
     output = input.detach().numpy()
     return output
 
+
+def ROCandAUC():
+    
+    return None
+
+def PCAPlots():
+    
+    return None
+
+def Histograms():
+    
+    return None
+
+def Boxplots():
+    
+    return None
+
+def UMAPPlot():
+    return None
+
+def clustering():
+    return None
+
+def AnomalyScores():
+    
+    return None
 def training(neuralnet, dataset, epochs, batch_size):
+
     
     torch.autograd.set_detect_anomaly(True)
     device = torch.device("cpu")
@@ -175,33 +202,33 @@ def training(neuralnet, dataset, epochs, batch_size):
         #x_hat = np.transpose(torch2npy(x_hat), (0, 2, 3, 1))
         
         
-        if(neuralnet.z_dim == 2):
-            latent_plot(latent=z_code, y=y_tr, n=dataset.num_class, \
-                savename=os.path.join("results", "tr_latent", "%08d.png" %(epoch)))
-        else:
-            pca = PCA(n_components=2)
-            try:
-                pca_features = pca.fit_transform(z_code)
-                latent_plot(latent=pca_features, y=y_tr, n=dataset.num_class, \
-                savename=os.path.join("results", "tr_latent", "%08d.png" %(epoch)))
-            except: pass
+        # if(neuralnet.z_dim == 2):
+        #     latent_plot(latent=z_code, y=y_tr, n=dataset.num_class, \
+        #         savename=os.path.join("results", "tr_latent", "%08d.png" %(epoch)))
+        # else:
+        #     pca = PCA(n_components=2)
+        #     try:
+        #         pca_features = pca.fit_transform(z_code)
+        #         latent_plot(latent=pca_features, y=y_tr, n=dataset.num_class, \
+        #         savename=os.path.join("results", "tr_latent", "%08d.png" %(epoch)))
+        #     except: pass
 
-        save_img(contents=[x_tr, x_hat, (x_tr-x_hat)**2], \
-            names=["Input\n(x)", "Restoration\n(x to x-hat)", "Difference"], \
-            savename=os.path.join("results", "tr_resotring", "%08d.png" %(epoch)))
+        # save_img(contents=[x_tr, x_hat, (x_tr-x_hat)**2], \
+        #     names=["Input\n(x)", "Restoration\n(x to x-hat)", "Difference"], \
+        #     savename=os.path.join("results", "tr_resotring", "%08d.png" %(epoch)))
 
-        if(neuralnet.z_dim == 2):
-            x_values = np.linspace(-3, 3, test_sq)
-            y_values = np.linspace(-3, 3, test_sq)
-            z_latents = None
-            for y_loc, y_val in enumerate(y_values):
-                for x_loc, x_val in enumerate(x_values):
-                    z_latent = np.reshape(np.array([y_val, x_val], dtype=np.float32), (1, neuralnet.z_dim))
-                    if(z_latents is None): z_latents = z_latent
-                    else: z_latents = np.append(z_latents, z_latent, axis=0)
-            x_samples = neuralnet.decoder(torch.from_numpy(z_latents).to(neuralnet.device))
-            x_samples = np.transpose(torch2npy(x_samples), (0, 2, 3, 1))
-            plt.imsave(os.path.join("results", "tr_latent_walk", "%08d.png" %(epoch)), dat2canvas(data=x_samples))
+        # if(neuralnet.z_dim == 2):
+        #     x_values = np.linspace(-3, 3, test_sq)
+        #     y_values = np.linspace(-3, 3, test_sq)
+        #     z_latents = None
+        #     for y_loc, y_val in enumerate(y_values):
+        #         for x_loc, x_val in enumerate(x_values):
+        #             z_latent = np.reshape(np.array([y_val, x_val], dtype=np.float32), (1, neuralnet.z_dim))
+        #             if(z_latents is None): z_latents = z_latent
+        #             else: z_latents = np.append(z_latents, z_latent, axis=0)
+        #     x_samples = neuralnet.decoder(torch.from_numpy(z_latents).to(neuralnet.device))
+        #     x_samples = np.transpose(torch2npy(x_samples), (0, 2, 3, 1))
+        #     plt.imsave(os.path.join("results", "tr_latent_walk", "%08d.png" %(epoch)), dat2canvas(data=x_samples))
         batch_iter = 0
         while(True):
             batch_iter = batch_iter + 1
@@ -253,7 +280,7 @@ def training(neuralnet, dataset, epochs, batch_size):
                   
               if k == nlayer:
                # print("Gradloss in encoder is")
-              #  print(grad_loss)
+               #print(grad_loss)
                 break
                   
             j = 0      
@@ -359,6 +386,12 @@ def training(neuralnet, dataset, epochs, batch_size):
     save_graph(contents=list_grad, xlabel="Iteration", ylabel="Adv Error", savename="l_grad")
     save_graph(contents=list_tot, xlabel="Iteration", ylabel="Total Loss", savename="l_tot")
 
+def validation(neuralnet, dataset):
+    
+    print("Validating with outlier classes :")
+    
+    return None
+
 def test(neuralnet, dataset):
 
     param_paths = glob.glob(os.path.join(PACK_PATH, "runs", "params*"))
@@ -401,8 +434,8 @@ def test(neuralnet, dataset):
     scores_abnormal = np.asarray(scores_abnormal)
     normal_avg, normal_std = np.average(scores_normal), np.std(scores_normal)
     abnormal_avg, abnormal_std = np.average(scores_abnormal), np.std(scores_abnormal)
-    print("Noraml  avg: %.5f, std: %.5f" %(normal_avg, normal_std))
-    print("Abnoraml  avg: %.5f, std: %.5f" %(abnormal_avg, abnormal_std))
+    print("Normal  avg: %.5f, std: %.5f" %(normal_avg, normal_std))
+    print("Abnormal  avg: %.5f, std: %.5f" %(abnormal_avg, abnormal_std))
     outbound = normal_avg + (normal_std * 3)
     print("Outlier boundary of normal data: %.5f" %(outbound))
 
@@ -467,3 +500,4 @@ def test(neuralnet, dataset):
         pca_features = pca.fit_transform(z_code_tot)
         latent_plot(latent=pca_features, y=y_te_tot, n=dataset.num_class, \
             savename=os.path.join("test-latent.png"))
+
