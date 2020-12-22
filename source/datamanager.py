@@ -6,7 +6,7 @@ from sklearn.utils import shuffle
 
 class Dataset(object):
 
-    def __init__(self, normalize, data, inlier_class):
+    def __init__(self, normalize, data, inlier_class, size):
         #Nota Bene: data is an integer: 1,2,3, or 4
         print("\nInitializing Dataset...")
 
@@ -30,7 +30,7 @@ class Dataset(object):
         self.x_tr = np.ndarray.astype(self.x_tr, np.float32)
         self.x_te = np.ndarray.astype(self.x_te, np.float32)
 
-        self.split_dataset(inlier_class)
+        self.split_dataset(inlier_class, size)
 
         self.num_tr, self.num_te = self.x_tr.shape[0], self.x_te.shape[0]
         self.idx_tr, self.idx_te = 0, 0
@@ -53,7 +53,7 @@ class Dataset(object):
         print("Normalization: %r" %(self.normalize))
         if(self.normalize): print("(from %.3f-%.3f to %.3f-%.3f)" %(self.min_val, self.max_val, 0, 1))
 
-    def split_dataset(self, inlier_class):
+    def split_dataset(self, inlier_class, size):
 
         x_tot = np.append(self.x_tr, self.x_te, axis=0)
         y_tot = np.append(self.y_tr, self.y_te, axis=0)
