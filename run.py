@@ -30,7 +30,7 @@ def main():
     solver.validation(neuralnet=neuralnet, dataset=dataset, split=FLAGS.Split)
     #Testing
     solver.test(neuralnet=neuralnet, dataset=dataset, split=FLAGS.Split)
-
+    
 
     #All evaluation occurs in the end of these methods.
 

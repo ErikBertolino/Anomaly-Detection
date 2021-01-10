@@ -7,12 +7,14 @@ import torch.nn.functional as func
 from torch.nn import functional as F
 from itertools import chain
 from sklearn.decomposition import PCA
+from sklearn.metrics import roc_curve, auc
 from torch.utils.tensorboard import SummaryWriter
 import source.utils as utils
 from time import sleep
 import tracemalloc
 PACK_PATH = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/.."
 from pympler import muppy, summary
+from datetime import datetime
 
 def make_dir(path):
 
@@ -125,16 +127,61 @@ def torch2npy(input):
     output = input.detach().numpy()
     return output
 
+def ROCandAUC(result):
 
-def ROCandAUC():
+
+    in_pred = result[np.where(result[:,0] == 1)]
+    out_pred = result[np.where(result[:,0] == 0)]
     
+    label = np.concatenate((np.ones([in_pred.shape[0],]), np.zeros([out_pred.shape[0],])), axis = 0)
+    score = np.concatenate((in_pred[:,1], out_pred[:,1]), axis = 0)
+    #fpr_auc, tpr_auc, _ = roc_curve(label, score, pos_label=1)
+    #auroc_results[0, in_cls] = auc(fpr_auc, tpr_auc)
+    #aurc_results = np.zeros([1,11]) #10 inlier classes + average
+    #auroc_results[:, -1] = np.mean(auroc_results[:,:-1], axis = 1)
     return None
 
 def PCAPlots():
     
     return None
 
-def Histograms():
+#These functions create several histogram plots, where the two 
+#classes is "normal" and "abnormal"
+
+def HistogramLgrad(Data, labels):
+    
+    #Compute overlap
+    
+    return None
+
+
+def HistogramMSE(Data, labels):
+    
+    #Compute overlap
+    
+    return None
+
+def HistogramAnomalyScore(Data, labels):
+    
+    #Compute overlap
+    
+    
+    return None
+
+#These functions create several histogram plots, for each label
+
+def HistogramsMSE(Data, labels):
+    
+    return None
+
+def HistogramsAnomalyScore(Data, labels):
+    
+    return None
+
+def HistogramsLgrad(Data, labels):
+    
+    
+    #Saving histogram picture
     
     return None
 
@@ -142,15 +189,30 @@ def Boxplots():
     
     return None
 
+
+#This function creates a UMAP-plot of the latent space
 def UMAPPlot():
-    return None
-
-def clustering():
-    return None
-
-def AnomalyScores():
     
     return None
+
+
+#This function creates a kNN of the latent space post-PCA.
+def clustering():
+    
+    return None
+
+
+def folders():
+    timenow = datetime.now().strftime('%Y-%m-%d_%H%M%S')
+    currentpath = os.getcwd()
+    folderpath = os.path.join(currentpath, str(timenow))
+    folderpathHist = os.path.join(folderpath, 'histograms')
+    folderpathBoxplots = os.path.join(folderpath, 'boxplots')
+    
+    folderpathPCAUMAP = os.path.join(folderpath, 'PCA_UMAP')
+    
+    folderpathClustering = os.path.join(folderpath, 'clustering')
+
 def training(neuralnet, dataset, epochs, batch_size):
 
     
@@ -233,9 +295,6 @@ def training(neuralnet, dataset, epochs, batch_size):
         while(True):
             batch_iter = batch_iter + 1
            
-            
-            
-            
             x_tr, x_tr_torch, y_tr, y_tr_torch, terminator = dataset.next_train(batch_size)
 
             z_code = neuralnet.encoder(x_tr_torch.to(neuralnet.device))
@@ -392,6 +451,9 @@ def validation(neuralnet, dataset):
     
     return None
 
+
+
+
 def test(neuralnet, dataset):
 
     param_paths = glob.glob(os.path.join(PACK_PATH, "runs", "params*"))
@@ -410,6 +472,7 @@ def test(neuralnet, dataset):
     for result_name in result_list: make_dir(path=os.path.join("test", result_name))
 
     scores_normal, scores_abnormal = [], []
+    
     while(True):
         x_te, x_te_torch, y_te, y_te_torch, terminator = dataset.next_test(1) # y_te does not used in this prj.
 
@@ -500,4 +563,46 @@ def test(neuralnet, dataset):
         pca_features = pca.fit_transform(z_code_tot)
         latent_plot(latent=pca_features, y=y_te_tot, n=dataset.num_class, \
             savename=os.path.join("test-latent.png"))
+
+
+
+
+def evaluation(neuralnet, dataset, parameters):
+    
+    
+    #Creating folder for results.
+    #Time, Date, Dataset in folder name
+    
+    folderName = "";
+    #.txt file with all parameters
+    
+    
+    #We are supposed to collect ... which requires a ... matrix
+    
+    scores_normal_mse, scores_abnormal_mse = [], []
+    Lgrad_scores_normal, L_grad_scores_abnormal = [], []
+    
+    LgradWeights = []
+    Labels = []
+    
+    #Doing a complete pass through the whole dataset
+    
+    
+    #Evaluating
+    
+    #Histograms
+    
+    
+    
+    #PCA and UMAP analysis of latent space
+    
+    #Clustering 
+    
+    #
+
+    return None
+
+
+
+
 
