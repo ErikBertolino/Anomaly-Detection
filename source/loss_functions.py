@@ -1,7 +1,5 @@
 import torch
 
-import torch.nn.functional as func
-
 
 def loss_enc(z_code, z_code_hat):
 

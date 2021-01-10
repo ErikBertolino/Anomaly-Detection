@@ -7,12 +7,14 @@ import torch.nn.functional as func
 from torch.nn import functional as F
 from itertools import chain
 from sklearn.decomposition import PCA
+from sklearn.metrics import roc_curve, auc
 from torch.utils.tensorboard import SummaryWriter
 import source.utils as utils
 from time import sleep
 import tracemalloc
 PACK_PATH = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/.."
 from pympler import muppy, summary
+from datetime import datetime
 
 def make_dir(path):
 
@@ -125,7 +127,94 @@ def torch2npy(input):
     output = input.detach().numpy()
     return output
 
+def ROCandAUC(result):
+
+
+    in_pred = result[np.where(result[:,0] == 1)]
+    out_pred = result[np.where(result[:,0] == 0)]
+    
+    label = np.concatenate((np.ones([in_pred.shape[0],]), np.zeros([out_pred.shape[0],])), axis = 0)
+    score = np.concatenate((in_pred[:,1], out_pred[:,1]), axis = 0)
+    #fpr_auc, tpr_auc, _ = roc_curve(label, score, pos_label=1)
+    #auroc_results[0, in_cls] = auc(fpr_auc, tpr_auc)
+    #aurc_results = np.zeros([1,11]) #10 inlier classes + average
+    #auroc_results[:, -1] = np.mean(auroc_results[:,:-1], axis = 1)
+    return None
+
+def PCAPlots():
+    
+    return None
+
+#These functions create several histogram plots, where the two 
+#classes is "normal" and "abnormal"
+
+def HistogramLgrad(Data, labels):
+    
+    #Compute overlap
+    
+    return None
+
+
+def HistogramMSE(Data, labels):
+    
+    #Compute overlap
+    
+    return None
+
+def HistogramAnomalyScore(Data, labels):
+    
+    #Compute overlap
+    
+    
+    return None
+
+#These functions create several histogram plots, for each label
+
+def HistogramsMSE(Data, labels):
+    
+    return None
+
+def HistogramsAnomalyScore(Data, labels):
+    
+    return None
+
+def HistogramsLgrad(Data, labels):
+    
+    
+    #Saving histogram picture
+    
+    return None
+
+def Boxplots():
+    
+    return None
+
+
+#This function creates a UMAP-plot of the latent space
+def UMAPPlot():
+    
+    return None
+
+
+#This function creates a kNN of the latent space post-PCA.
+def clustering():
+    
+    return None
+
+
+def folders():
+    timenow = datetime.now().strftime('%Y-%m-%d_%H%M%S')
+    currentpath = os.getcwd()
+    folderpath = os.path.join(currentpath, str(timenow))
+    folderpathHist = os.path.join(folderpath, 'histograms')
+    folderpathBoxplots = os.path.join(folderpath, 'boxplots')
+    
+    folderpathPCAUMAP = os.path.join(folderpath, 'PCA_UMAP')
+    
+    folderpathClustering = os.path.join(folderpath, 'clustering')
+
 def training(neuralnet, dataset, epochs, batch_size):
+
     
     torch.autograd.set_detect_anomaly(True)
     device = torch.device("cpu")
@@ -175,40 +264,37 @@ def training(neuralnet, dataset, epochs, batch_size):
         #x_hat = np.transpose(torch2npy(x_hat), (0, 2, 3, 1))
         
         
-        if(neuralnet.z_dim == 2):
-            latent_plot(latent=z_code, y=y_tr, n=dataset.num_class, \
-                savename=os.path.join("results", "tr_latent", "%08d.png" %(epoch)))
-        else:
-            pca = PCA(n_components=2)
-            try:
-                pca_features = pca.fit_transform(z_code)
-                latent_plot(latent=pca_features, y=y_tr, n=dataset.num_class, \
-                savename=os.path.join("results", "tr_latent", "%08d.png" %(epoch)))
-            except: pass
+        # if(neuralnet.z_dim == 2):
+        #     latent_plot(latent=z_code, y=y_tr, n=dataset.num_class, \
+        #         savename=os.path.join("results", "tr_latent", "%08d.png" %(epoch)))
+        # else:
+        #     pca = PCA(n_components=2)
+        #     try:
+        #         pca_features = pca.fit_transform(z_code)
+        #         latent_plot(latent=pca_features, y=y_tr, n=dataset.num_class, \
+        #         savename=os.path.join("results", "tr_latent", "%08d.png" %(epoch)))
+        #     except: pass
 
-        save_img(contents=[x_tr, x_hat, (x_tr-x_hat)**2], \
-            names=["Input\n(x)", "Restoration\n(x to x-hat)", "Difference"], \
-            savename=os.path.join("results", "tr_resotring", "%08d.png" %(epoch)))
+        # save_img(contents=[x_tr, x_hat, (x_tr-x_hat)**2], \
+        #     names=["Input\n(x)", "Restoration\n(x to x-hat)", "Difference"], \
+        #     savename=os.path.join("results", "tr_resotring", "%08d.png" %(epoch)))
 
-        if(neuralnet.z_dim == 2):
-            x_values = np.linspace(-3, 3, test_sq)
-            y_values = np.linspace(-3, 3, test_sq)
-            z_latents = None
-            for y_loc, y_val in enumerate(y_values):
-                for x_loc, x_val in enumerate(x_values):
-                    z_latent = np.reshape(np.array([y_val, x_val], dtype=np.float32), (1, neuralnet.z_dim))
-                    if(z_latents is None): z_latents = z_latent
-                    else: z_latents = np.append(z_latents, z_latent, axis=0)
-            x_samples = neuralnet.decoder(torch.from_numpy(z_latents).to(neuralnet.device))
-            x_samples = np.transpose(torch2npy(x_samples), (0, 2, 3, 1))
-            plt.imsave(os.path.join("results", "tr_latent_walk", "%08d.png" %(epoch)), dat2canvas(data=x_samples))
+        # if(neuralnet.z_dim == 2):
+        #     x_values = np.linspace(-3, 3, test_sq)
+        #     y_values = np.linspace(-3, 3, test_sq)
+        #     z_latents = None
+        #     for y_loc, y_val in enumerate(y_values):
+        #         for x_loc, x_val in enumerate(x_values):
+        #             z_latent = np.reshape(np.array([y_val, x_val], dtype=np.float32), (1, neuralnet.z_dim))
+        #             if(z_latents is None): z_latents = z_latent
+        #             else: z_latents = np.append(z_latents, z_latent, axis=0)
+        #     x_samples = neuralnet.decoder(torch.from_numpy(z_latents).to(neuralnet.device))
+        #     x_samples = np.transpose(torch2npy(x_samples), (0, 2, 3, 1))
+        #     plt.imsave(os.path.join("results", "tr_latent_walk", "%08d.png" %(epoch)), dat2canvas(data=x_samples))
         batch_iter = 0
         while(True):
             batch_iter = batch_iter + 1
            
-            
-            
-            
             x_tr, x_tr_torch, y_tr, y_tr_torch, terminator = dataset.next_train(batch_size)
 
             z_code = neuralnet.encoder(x_tr_torch.to(neuralnet.device))
@@ -253,7 +339,7 @@ def training(neuralnet, dataset, epochs, batch_size):
                   
               if k == nlayer:
                # print("Gradloss in encoder is")
-              #  print(grad_loss)
+               #print(grad_loss)
                 break
                   
             j = 0      
@@ -359,6 +445,15 @@ def training(neuralnet, dataset, epochs, batch_size):
     save_graph(contents=list_grad, xlabel="Iteration", ylabel="Adv Error", savename="l_grad")
     save_graph(contents=list_tot, xlabel="Iteration", ylabel="Total Loss", savename="l_tot")
 
+def validation(neuralnet, dataset):
+    
+    print("Validating with outlier classes :")
+    
+    return None
+
+
+
+
 def test(neuralnet, dataset):
 
     param_paths = glob.glob(os.path.join(PACK_PATH, "runs", "params*"))
@@ -377,6 +472,7 @@ def test(neuralnet, dataset):
     for result_name in result_list: make_dir(path=os.path.join("test", result_name))
 
     scores_normal, scores_abnormal = [], []
+    
     while(True):
         x_te, x_te_torch, y_te, y_te_torch, terminator = dataset.next_test(1) # y_te does not used in this prj.
 
@@ -401,8 +497,8 @@ def test(neuralnet, dataset):
     scores_abnormal = np.asarray(scores_abnormal)
     normal_avg, normal_std = np.average(scores_normal), np.std(scores_normal)
     abnormal_avg, abnormal_std = np.average(scores_abnormal), np.std(scores_abnormal)
-    print("Noraml  avg: %.5f, std: %.5f" %(normal_avg, normal_std))
-    print("Abnoraml  avg: %.5f, std: %.5f" %(abnormal_avg, abnormal_std))
+    print("Normal  avg: %.5f, std: %.5f" %(normal_avg, normal_std))
+    print("Abnormal  avg: %.5f, std: %.5f" %(abnormal_avg, abnormal_std))
     outbound = normal_avg + (normal_std * 3)
     print("Outlier boundary of normal data: %.5f" %(outbound))
 
@@ -467,3 +563,46 @@ def test(neuralnet, dataset):
         pca_features = pca.fit_transform(z_code_tot)
         latent_plot(latent=pca_features, y=y_te_tot, n=dataset.num_class, \
             savename=os.path.join("test-latent.png"))
+
+
+
+
+def evaluation(neuralnet, dataset, parameters):
+    
+    
+    #Creating folder for results.
+    #Time, Date, Dataset in folder name
+    
+    folderName = "";
+    #.txt file with all parameters
+    
+    
+    #We are supposed to collect ... which requires a ... matrix
+    
+    scores_normal_mse, scores_abnormal_mse = [], []
+    Lgrad_scores_normal, L_grad_scores_abnormal = [], []
+    
+    LgradWeights = []
+    Labels = []
+    
+    #Doing a complete pass through the whole dataset
+    
+    
+    #Evaluating
+    
+    #Histograms
+    
+    
+    
+    #PCA and UMAP analysis of latent space
+    
+    #Clustering 
+    
+    #
+
+    return None
+
+
+
+
+
