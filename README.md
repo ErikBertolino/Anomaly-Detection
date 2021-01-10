@@ -1,4 +1,4 @@
-[PyTorch] GANomaly
+[PyTorch] GAN-Grad
 =====
 
 Implementation of GANomaly-GradCon Hybrid with MNIST dataset. This is really an amalgation of two different models: GANomaly and GradCon.
@@ -8,13 +8,13 @@ Currently, there is a problem with the amount of RAM needed to run the code. Bet
 ## Architecture
 <div align="center">
   <img src="./figures/ganomaly.png" width="500">  
-  <p>Simplified GANomaly architecture.</p>
+  <p>Simplified GAN-Grad architecture.</p>
 </div>
 
 ## Graph in TensorBoard
 <div align="center">
   <img src="./figures/graph.png" width="800">  
-  <p>Graph of GANomaly.</p>
+  <p>Graph of GAN-Grad.</p>
 </div>
 
 ##How to run
