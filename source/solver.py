@@ -321,9 +321,7 @@ def training(neuralnet, dataset, epochs, batch_size):
             x_tr_copy.requires_grad = True
             recon_loss = func.mse_loss(x_tr_copy,x_hat_copy)
            
-          
-
-            
+            #This is for evaluation of gradloss, which is a bit more cumbersome.
             nlayer = 16
             grad_loss = 0
             target_grad = 0
@@ -356,9 +354,6 @@ def training(neuralnet, dataset, epochs, batch_size):
                # print(grad_loss)
                 break
                 
-             
-                
-
             nlayer = 16
             grad_loss = grad_loss/nlayer
             if ref_grad_enc[0].count == 0:

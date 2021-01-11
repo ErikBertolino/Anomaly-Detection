@@ -12,17 +12,21 @@ class Dataset(object):
 
         self.normalize = normalize
         if(data == 1):
+            print("MNIST")
             (x_tr, y_tr), (x_te, y_te) = tf.keras.datasets.mnist.load_data()
             
         if(data == 2):
+            print("fMNIST")
             fashion_mnist = tf.keras.datasets.fashion_mnist
             (x_tr, y_tr), (x_te, y_te) = fashion_mnist.load_data()
             
         if(data == 3):
+            print("CIFAR-10")
             cifar_10 = tf.keras.datasets.cifar10
             (x_tr, y_tr), (x_te, y_te) = cifar_10.load_data()
             
         if(data == 4):
+            print("CIFAR-100")
             cifar_100 = tf.keras.datasets.cifar100
             (x_tr, y_tr), (x_te, y_te) = cifar_100.load_data()
             
