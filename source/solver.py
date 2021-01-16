@@ -15,6 +15,17 @@ import tracemalloc
 PACK_PATH = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/.."
 from pympler import muppy, summary
 from datetime import datetime
+from scipy.optimize import brentq
+from scipy.interpolate import interp1d
+import matplotlib.pyplot as plt
+from matplotlib import rc
+
+from sklearn.metrics import roc_curve, auc, average_precision_score, f1_score
+
+
+def auprc(labels, scores):
+    ap = average_precision_score(labels.cpu(), scores.cpu())
+    return ap
 
 def make_dir(path):
 
@@ -140,6 +151,46 @@ def ROCandAUC(result):
     #aurc_results = np.zeros([1,11]) #10 inlier classes + average
     #auroc_results[:, -1] = np.mean(auroc_results[:,:-1], axis = 1)
     return None
+
+
+
+def roc(labels, scores, saveto=None):
+    """Compute ROC curve and ROC area for each class"""
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+
+    labels = labels.cpu()
+    scores = scores.cpu()
+
+    # True/False Positive Rates.
+    fpr, tpr, _ = roc_curve(labels, scores)
+    roc_auc = auc(fpr, tpr)
+
+    # Equal Error Rate
+    eer = brentq(lambda x: 1. - x - interp1d(fpr, tpr)(x), 0., 1.)
+
+    if saveto:
+        plt.figure()
+        lw = 2
+        plt.plot(fpr, tpr, color='darkorange', lw=lw, label='(AUC = %0.2f, EER = %0.2f)' % (roc_auc, eer))
+        plt.plot([eer], [1-eer], marker='o', markersize=5, color="navy")
+        plt.plot([0, 1], [1, 0], color='navy', lw=1, linestyle=':')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver operating characteristic')
+        plt.legend(loc="lower right")
+        plt.savefig(os.path.join(saveto, "ROC.pdf"))
+        plt.close()
+
+    return roc_auc
+
+
+
+
+
 
 def PCAPlots():
     

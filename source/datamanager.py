@@ -30,7 +30,7 @@ class Dataset(object):
             cifar_100 = tf.keras.datasets.cifar100
             (x_tr, y_tr), (x_te, y_te) = cifar_100.load_data()
             
-        self.x_vd, self.y_vd = None, None
+        self.x_vd, self.y_vd = None, None #We will fill these two later
         self.x_tr, self.y_tr = x_tr, y_tr
         self.x_te, self.y_te = x_te, y_te
 
@@ -73,7 +73,7 @@ class Dataset(object):
         x_tot = np.append(self.x_tr, self.x_te, axis=0)
         y_tot = np.append(self.y_tr, self.y_te, axis=0)
         
-        print("Inlier clas is %d", inlier_class)
+        print("Inlier class is %d", inlier_class)
         
         x_normal, y_normal = None, None
         x_abnormal, y_abnormal = None, None
