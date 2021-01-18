@@ -6,7 +6,7 @@ from sklearn.utils import shuffle
 
 class Dataset(object):
 
-    def __init__(self, normalize, data, inlier_class, size):
+    def __init__(self, normalize, data, inlier_classes, size):
         #Nota Bene: data is an integer: 1,2,3, or 4
         print("\nInitializing Dataset...")
 
@@ -37,7 +37,7 @@ class Dataset(object):
         self.x_tr = np.ndarray.astype(self.x_tr, np.float32)
         self.x_te = np.ndarray.astype(self.x_te, np.float32)
 
-        self.split_dataset(inlier_class, size,data)
+        self.split_dataset(inlier_classes, size, data)
 
         self.num_tr, self.num_te = self.x_tr.shape[0], self.x_te.shape[0]
         self.idx_tr, self.idx_te, self.idx_vd = 0, 0, 0
@@ -62,7 +62,7 @@ class Dataset(object):
         print("Normalization: %r" %(self.normalize))
         if(self.normalize): print("(from %.3f-%.3f to %.3f-%.3f)" %(self.min_val, self.max_val, 0, 1))
 
-    def split_dataset(self, inlier_class, size, data):
+    def split_dataset(self, inlier_classes, size, data):
         
         #Size is used to denote the size of the inlier class. 
         #The amount of outliers is size/2, so the total size of the dataset is then
@@ -73,7 +73,8 @@ class Dataset(object):
         x_tot = np.append(self.x_tr, self.x_te, axis=0)
         y_tot = np.append(self.y_tr, self.y_te, axis=0)
         
-        print("Inlier class is %d", inlier_class)
+        print("Inlier classes are:")
+        print(*inlier_classes)
         
         x_normal, y_normal = None, None
         x_abnormal, y_abnormal = None, None
@@ -82,7 +83,7 @@ class Dataset(object):
             x_tmp = np.expand_dims(x_tot[yidx], axis=0)
             y_tmp = np.expand_dims(y_tot[yidx], axis=0)
 
-            if(y == inlier_class): # as normal
+            if(y in inlier_classes): # as normal
                 if(x_normal is None):
                     x_normal = x_tmp
                     y_normal = y_tmp

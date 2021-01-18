@@ -10,7 +10,7 @@ import os
 from datetime import datetime
 
     
-def folders():
+def folders(folderpath):
     timenow = datetime.now().strftime('%Y-%m-%d_%H%M%S')
     currentpath = os.getcwd()
     folderpath = os.path.join(currentpath, str(timenow))
@@ -18,9 +18,11 @@ def folders():
     folderpathBoxplots = os.path.join(folderpath, 'boxplots')
     folderpathPCA = os.path.join(folderpath, 'PCA_UMAP')
     folderpathClustering = os.path.join(folderpath, 'clustering')
+    folderpathWeights = os.path.join(folderpath, 'Weights')
     if not os.path.exists(folderpath):
         os.makedirs(folderpath)
         os.makedirs(folderpathHist)
         os.makedirs(folderpathBoxplots)
         os.makedirs(folderpathPCA)
         os.makedirs(folderpathClustering)
+        os.makedirs(folderpathWeights)
