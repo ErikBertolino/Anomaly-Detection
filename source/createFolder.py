@@ -11,9 +11,6 @@ from datetime import datetime
 
     
 def folders(folderpath):
-    timenow = datetime.now().strftime('%Y-%m-%d_%H%M%S')
-    currentpath = os.getcwd()
-    folderpath = os.path.join(currentpath, str(timenow))
     folderpathHist = os.path.join(folderpath, 'histograms')
     folderpathBoxplots = os.path.join(folderpath, 'boxplots')
     folderpathPCA = os.path.join(folderpath, 'PCA_UMAP')

@@ -29,7 +29,7 @@ def main():
     #Validation
     solver.validation(neuralnet=neuralnet, dataset=dataset, split=FLAGS.Split)
     #Testing
-    solver.test(neuralnet=neuralnet, dataset=dataset, split=FLAGS.Split,inlier=FLAGS.Inlier_Classes )
+    solver.test(neuralnet=neuralnet, dataset=dataset, split=FLAGS.Split,inlier=FLAGS.Inlier_Classes)
     
 
     #All evaluation occurs in the end of these methods.

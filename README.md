@@ -19,13 +19,14 @@ Currently, there is a problem with the amount of RAM needed to run the code. Bet
 
 ###How to run
 <div align="center">
-Clone this repository and run following commands to create a conda environment and install all dependencies.
+Clone this repository and run following commands to create a conda environment and install all dependencies. Nota Bene: 
+you may need to run anaconda prompt with administrator privilegies.
 ```
 	conda create -n GAN-Grad python=3.8
 	conda activate GAN-Grad
 	cd Anomaly-Detection
 	conda install pytorch torchvision -c pytorch
-	pip install -r requirments.txt
+	pip install -r requirements.txt
 ```
 </div>
 

@@ -510,9 +510,16 @@ def training(neuralnet, dataset, epochs, batch_size):
     save_graph(contents=list_grad, xlabel="Iteration", ylabel="Adv Error", savename="l_grad")
     save_graph(contents=list_tot, xlabel="Iteration", ylabel="Total Loss", savename="l_tot")
 
-def validation(neuralnet, dataset):
+def validation(neuralnet, dataset, epochs, batch_size):
     
     print("Validating ...")
+    
+    
+    for epoch in range(epochs):
+
+        x_tr, x_tr_torch, y_tr, y_tr_torch, _ = dataset.next_train(batch_size=test_size, fix=True) # Initial batch
+    
+    
     
     return None
 
