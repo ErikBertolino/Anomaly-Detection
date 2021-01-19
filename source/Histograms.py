@@ -22,19 +22,20 @@ mean_mu2 = 80
 sd_sigma2 = 15
 data2 = np.random.normal(mean_mu2, sd_sigma2, n)
 
-plt.figure(figsize=(8,6))
+plt.figure(figsize=(8, 6))
 plt.hist(data1, bins=100, alpha=0.5, label="data1")
 plt.hist(data2, bins=100, alpha=0.5, label="data2")
 
 plt.xlabel("Data", size=14)
 plt.ylabel("Count", size=14)
 plt.title("Multiple Histograms with Matplotlib")
-plt.legend(loc='upper right')
+plt.legend(loc="upper right")
 plt.savefig("overlapping_histograms_with_matplotlib_Python.png")
 
 
-#This code prints overlapping histograms given a data matrix,
-#where rows are observations and labels is the associated class
+# This code prints overlapping histograms given a data matrix,
+# where rows are observations and labels is the associated class
+
 
 def Histograms(Data, labels):
     differentLabels = np.unique(labels)
@@ -44,9 +45,5 @@ def Histograms(Data, labels):
         label_hist = str(labelclass)
         plt.hist(data_hist, bins=100, alpha=0.5, label=label_hist)
     plt.title("Several classes of Histograms")
-    plt.legend(loc='upper right')
+    plt.legend(loc="upper right")
     plt.savefig("Multiple Histograms.png")
-    
-    
-
-
