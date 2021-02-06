@@ -514,14 +514,192 @@ def validation(neuralnet, dataset, epochs, batch_size):
     
     print("Validating ...")
     
+    device = torch.device("cpu")
+    test_sq = 20
+    test_size = test_sq**2
+    
+    
+    
+    ref_grad_enc = []
+    ref_grad_dec = []
+    
+    
+    for name, param in neuralnet.encoder.named_parameters():
+        if name.endswith('weight'):
+            layer_grad = utils.AverageMeter()
+            layer_grad.avg = torch.zeros_like(param)
+            ref_grad_enc.append(layer_grad)
+    for name, param in neuralnet.decoder.named_parameters():
+        if name.endswith('weight'):
+            layer_grad = utils.AverageMeter()
+            layer_grad.avg = torch.zeros_like(param)
+            ref_grad_dec.append(layer_grad)
     
     for epoch in range(epochs):
 
         x_tr, x_tr_torch, y_tr, y_tr_torch, _ = dataset.next_train(batch_size=test_size, fix=True) # Initial batch
-    
-    
-    
-    return None
+
+        z_code = neuralnet.encoder(x_tr_torch.to(neuralnet.device))
+        x_hat = neuralnet.decoder(z_code.to(neuralnet.device))
+        z_code_hat = neuralnet.encoder(x_hat.to(neuralnet.device))
+        
+         
+        dis_x, features_real = neuralnet.discriminator(x_tr_torch.to(neuralnet.device))
+        dis_x_hat, features_fake = neuralnet.discriminator(x_hat.to(neuralnet.device))
+
+        #z_code = torch2npy(z_code)
+        #x_hat = np.transpose(torch2npy(x_hat), (0, 2, 3, 1))
+        
+        
+        # if(neuralnet.z_dim == 2):
+        #     latent_plot(latent=z_code, y=y_tr, n=dataset.num_class, \
+        #         savename=os.path.join("results", "tr_latent", "%08d.png" %(epoch)))
+        # else:
+        #     pca = PCA(n_components=2)
+        #     try:
+        #         pca_features = pca.fit_transform(z_code)
+        #         latent_plot(latent=pca_features, y=y_tr, n=dataset.num_class, \
+        #         savename=os.path.join("results", "tr_latent", "%08d.png" %(epoch)))
+        #     except: pass
+
+        # save_img(contents=[x_tr, x_hat, (x_tr-x_hat)**2], \
+        #     names=["Input\n(x)", "Restoration\n(x to x-hat)", "Difference"], \
+        #     savename=os.path.join("results", "tr_resotring", "%08d.png" %(epoch)))
+
+        # if(neuralnet.z_dim == 2):
+        #     x_values = np.linspace(-3, 3, test_sq)
+        #     y_values = np.linspace(-3, 3, test_sq)
+        #     z_latents = None
+        #     for y_loc, y_val in enumerate(y_values):
+        #         for x_loc, x_val in enumerate(x_values):
+        #             z_latent = np.reshape(np.array([y_val, x_val], dtype=np.float32), (1, neuralnet.z_dim))
+        #             if(z_latents is None): z_latents = z_latent
+        #             else: z_latents = np.append(z_latents, z_latent, axis=0)
+        #     x_samples = neuralnet.decoder(torch.from_numpy(z_latents).to(neuralnet.device))
+        #     x_samples = np.transpose(torch2npy(x_samples), (0, 2, 3, 1))
+        #     plt.imsave(os.path.join("results", "tr_latent_walk", "%08d.png" %(epoch)), dat2canvas(data=x_samples))
+        batch_iter = 0
+        while(True):
+            batch_iter = batch_iter + 1
+           
+            x_tr, x_tr_torch, y_tr, y_tr_torch, terminator = dataset.next_train(batch_size)
+
+            z_code = neuralnet.encoder(x_tr_torch.to(neuralnet.device))
+            x_hat = neuralnet.decoder(z_code.to(neuralnet.device))
+            z_code_hat = neuralnet.encoder(x_hat.to(neuralnet.device))
+
+            dis_x, features_real = neuralnet.discriminator(x_tr_torch.to(neuralnet.device))
+            dis_x_hat, features_fake = neuralnet.discriminator(x_hat.to(neuralnet.device))
+
+            l_tot, l_enc, l_con, l_adv = \
+                lfs.loss_ganomaly(z_code, z_code_hat, x_tr_torch, x_hat, \
+                dis_x, dis_x_hat, features_real, features_fake)
+
+            
+            
+            x_hat_copy = x_hat.clone()
+            x_hat_copy = x_hat_copy.permute(0,2,3,1)
+           # x_tr_copy = x_tr.clone().detach()
+           # x_tr_copy.requires_grad_()
+            x_tr_copy = torch.from_numpy(x_tr)
+      
+        
+
+            x_tr_copy.requires_grad = True
+            recon_loss = func.mse_loss(x_tr_copy,x_hat_copy)
+           
+            #This is for evaluation of gradloss, which is a bit more cumbersome.
+            nlayer = 16
+            grad_loss = 0
+            target_grad = 0
+            k = 0
+            for name, param in neuralnet.encoder.named_parameters():
+              if name.endswith('weight'):
+                  
+                  target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
+                  
+                  grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_enc[k].avg.view(-1,1), dim = 0).item()
+                  
+                  k = k + 1
+                  
+              if k == nlayer:
+               # print("Gradloss in encoder is")
+               #print(grad_loss)
+                break
+                  
+            j = 0      
+            for name, param in neuralnet.decoder.named_parameters():
+              if name.endswith('weight'):
+                  
+                  target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
+                  
+                  grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_dec[j].avg.view(-1,1), dim = 0).item()
+                  
+                  j = j + 1
+              if j == nlayer:
+               # print("Gradloss in decoder is")
+               # print(grad_loss)
+                break
+                
+            nlayer = 16
+            grad_loss = grad_loss/nlayer
+            if ref_grad_enc[0].count == 0:
+              print("Inside ref_grad count")
+              grad_loss = torch.FloatTensor([0.0]).to(device)
+            else:
+              grad_loss = grad_loss / nlayer
+            
+  
+
+            l_grad = grad_loss
+            
+            
+            l_tot = l_tot + grad_loss
+            neuralnet.optimizer.zero_grad()
+            #l_tot.backward(retain_graph = True)
+            l_tot.backward()
+            # Update the reference gradient
+            l = 0
+            for (name, param) in neuralnet.encoder.named_parameters():
+              if name.endswith('weight'):
+                ref_grad_enc[l].update(param.grad, 1)
+                l = l + 1
+            i = 0
+            for (name, param) in neuralnet.decoder.named_parameters():
+              if name.endswith('weight'):
+                ref_grad_dec[i].update(param.grad, 1)
+                i = i + 1
+
+            neuralnet.optimizer.step()
+            
+            #z_code = torch2npy(z_code)
+            #x_hat = np.transpose(torch2npy(x_hat), (0, 2, 3, 1))
+
+
+           # for i in range(2):
+            #    l = 0
+             #   for param in neuralnet.encoder.parameters():
+              #      l = l +1
+               #     if(l==28-2*i):
+                #        ref_grad[i].update(param.grad,1)
+                
+            
+            
+            print("Batch iteration is: ")
+            print(batch_iter)
+            
+            print("Percentage of available memory")
+            print(psutil.virtual_memory().available * 100 / psutil.virtual_memory().total)
+
+            current, peak = tracemalloc.get_traced_memory()
+
+            print("Current memory usage is MB")
+            print(current/10**6)
+            print("Peak was MB")
+            print(peak/10**6)
+              
+            iteration += 1
+            if(terminator): break
 
 
 
