@@ -8,17 +8,11 @@ import matplotlib.pyplot as plt
 import umap
 
 import hdbscan
-import sys
-from collections import defaultdict
-from os import path
-import os
 
 
 ################################################
 #UMAP and HDBSCAN function
 ################################################
-
-
 
 def draw_umap(data, n_neighbors, min_dist, n_components, metric, title):
     fit = umap.UMAP(
@@ -41,7 +35,7 @@ def draw_umap(data, n_neighbors, min_dist, n_components, metric, title):
     plt.title(title, fontsize=18)
     
     
-def draw_umap_hdbscan(data,n_neighbors, min_dist, n_components, metric, min_samples, min_cluster_size, cluster_selection_epsilon, q_plot):
+def draw_umap_hdbscan(data, n_neighbors, min_dist, n_components, metric, min_sample, min_cluster_size, cluster_selection_epsilon, q_plot):
     
     fit = umap.UMAP(
         n_neighbors=n_neighbors,
@@ -52,11 +46,11 @@ def draw_umap_hdbscan(data,n_neighbors, min_dist, n_components, metric, min_samp
     u_data = fit.fit_transform(data);
     
     
-    hdbscan_labels = hdbscan.HDBSCAN( min_samples, min_cluster_size, cluster_selection_epsilon ).fit_predict( u_data )
+    hdbscan_labels = hdbscan.HDBSCAN( min_sample, min_cluster_size, cluster_selection_epsilon ).fit_predict( u_data )
 
     num_clusters_found = hdbscan_labels.max() + 1
     
-    clusterer = hdbscan.HDBSCAN( min_samples, min_cluster_size, cluster_selection_epsilon ).fit( u_data )    
+    clusterer = hdbscan.HDBSCAN( min_sample, min_cluster_size, cluster_selection_epsilon ).fit( u_data )    
 
     
 
@@ -91,166 +85,182 @@ def NIDandNVD(Cluster_1, Cluster_2):
     l = max(Cluster_1)
     k = max(Cluster_2)
     
-    #Creation of table
-    N = 0
-    table = np.zeros([l,k])
-    
-    
-    #Calculation of table
-    for i_1 in range(0,l):
-        for i_2 in range(0,k):
-            v_1 = Cluster_1 == i_1
-            v_2 = Cluster_2 == i_2
-            v_1 = v_1.astype(int)
-            v_2 = v_2.astype(int)
+    if(l > 0 and k > 0):
+        #Creation of table
+        N = 0
+        table = np.zeros([l,k])
+       
+        
+        #Calculation of table
+        for i_1 in range(0,l):
+            for i_2 in range(0,k):
+                v_1 = Cluster_1 == i_1
+                v_2 = Cluster_2 == i_2
+                v_1 = v_1.astype(int)
+                v_2 = v_2.astype(int)
+                
+                table[i_1,i_2] = sum(v_1*v_2)
+                N = N + sum(v_1*v_2)
+        
+        if(N == 0): #Nothing in common at all.
+            NID = 1
+            NVD = 1
+        else:
+            #Calculation of entropy for first cluster
             
-            table[i_1,i_2] = sum(v_1*v_2)
-            N = N + sum(v_1*v_2)
-    
-    
-    #Calculation of entropy for first cluster
-    
-    entropy_1 = 0
-    for i_1 in range(0,l):
-        a = sum(table[i_1,:])
-        entropy_1 = entropy_1 + (a/N)*np.log(a/N)
-    
-    entropy_1 = -entropy_1
-    
-    #Calculation of entropy for second cluster
-    
-    entropy_2 = 0
-    for i_2 in range(0,k):
-        a = sum(table[:,i_2])
-        entropy_2 = entropy_2 + (a/N)*np.log(a/N)
-    
-    entropy_2 = -entropy_2
-    
-    #Calculation of joint entropy
-    entropy_joint = 0
-    for i_1 in range(0,l):
-        for i_2 in range(0,k):
-            if(table[i_1,i_2] != 0):
-               entropy_joint = entropy_joint + ((table[i_1,i_2])/N)*np.log((table[i_1,i_2])/N)
-               
-    
-    
-    entropy_joint = -entropy_joint
-    
-    
-    #Calculation of mutual entropy
-    
-    entropy_mutual = entropy_1 + entropy_2 - entropy_joint
-    
-    NID = 1-entropy_mutual/max(entropy_1,entropy_2)
-    
-    NVD = 1-entropy_mutual/entropy_joint
+            
+            entropy_1 = 0
+            for i_1 in range(0,l):
+                a = sum(table[i_1,:])
+                entropy_1 = entropy_1 + (a/N)*np.log(a/N)
+            
+            entropy_1 = -entropy_1
+            
+            #Calculation of entropy for second cluster
+            
+            entropy_2 = 0
+            for i_2 in range(0,k):
+                a = sum(table[:,i_2])
+                entropy_2 = entropy_2 + (a/N)*np.log(a/N)
+            
+            entropy_2 = -entropy_2
+            
+            #Calculation of joint entropy
+            entropy_joint = 0
+            for i_1 in range(0,l):
+                for i_2 in range(0,k):
+                    if(table[i_1,i_2] != 0):
+                       entropy_joint = entropy_joint + ((table[i_1,i_2])/N)*np.log((table[i_1,i_2])/N)
+                       
+            
+            
+            entropy_joint = -entropy_joint
+            
+            
+            #Calculation of mutual entropy
+            
+            entropy_mutual = entropy_1 + entropy_2 - entropy_joint
+            
+            NID = 1-entropy_mutual/max(entropy_1,entropy_2)
+            
+            NVD = 1-entropy_mutual/entropy_joint
+    else:
+        NID = None
+        NVD = None
     
     return NID, NVD
 
 
 
-###############################################
-#Importing data
-###############################################
 
 
 
 
-###############################################
-#Setting up Hyperparameters
-###############################################
 
 
-#We want to save the performance parameters, the clustering labels, the plot
-#and the hyperparameters
 
-hyperParam, performanceParam, clusteringLabels = [], [], []
-
-##Hyperparameters
-#metric  [ 'euclidean', "manhattan", "chebyshev", "minkowski", "canberra", "braycurtis", "mahalanobis", "wminkowski", "seuclidean", "cosine", "correlation", "hamming", "jaccard", "dice", "kulsinski", "ll_dirichlet", "hellinger", "rogerstanimoto", "sokalmichener", "sokalsneath", "yule" ]:
-metric = 'euclidean'
-
-#n_neighbors
-n_neighbors_v = range(2,10)
-
-#min_dist
-
-min_dist_v = range(0,1,10)
-
-#n_components
-
-n_components_v = range(2,10)
-
-#min_samples
-
-min_samples_v = [ 2, 3, 4, 5, 6, 7, 100 ]
-
-#min_cluster_size
-
-min_cluster_size_v = [1, 2, 3, 4, 9, 10, 100]
-
-#cluster_selection_epsilon
-
-cluster_selection_epsilon_v = [0.1, 0.2, 0.3, 0.4, 0.5, 4.0]
-
-#q_plot - 1 if one wants plot, 0 if not.
-q_plot = 0
-
-ground_truth_cluster = np.ones(100)
-
-
-###############################################
-#Main loop
-###############################################
-for n_neighbors in n_neighbors_v:
-    for min_dist in min_dist_v:
-        for n_components in n_components_v:
-            for min_sample in min_samples_v:
-                for min_cluster in min_cluster_size_v:
-                    for cluster_selection_epsilon in cluster_selection_epsilon_v:
+def clusteringScript(folderpath):
+    
+    ###############################################
+    #Loading data
+    ###############################################
+    
+    data = np.load(folderpath + 'LgradWeightsEnc.csv')
+    ground_truth_cluster = np.load(folderpath + 'labels.csv')
+    
+    ###############################################
+    #Setting up Hyperparameters
+    ###############################################
+    
+    
+    #We want to save the performance parameters, the clustering labels, the plot
+    #and the hyperparameters
+    
+    hyperParam, performanceParam, clusteringLabels = [], [], []
+    
+    ##Hyperparameters
+    #metric  [ 'euclidean', "manhattan", "chebyshev", "minkowski", "canberra", "braycurtis", "mahalanobis", "wminkowski", "seuclidean", "cosine", "correlation", "hamming", "jaccard", "dice", "kulsinski", "ll_dirichlet", "hellinger", "rogerstanimoto", "sokalmichener", "sokalsneath", "yule" ]:
+    metric = 'euclidean'
+    
+    #n_neighbors
+    n_neighbors_v = range(2,10,2)
+    
+    #min_dist
+    
+    min_dist_v = range(1/100,1,10)
+    
+    #n_components
+    
+    n_components_v = range(2,10,2)
+    
+    #min_samples
+    
+    min_samples_v = [ 2, 3, 4, 5, 6, 7, 100]
+    
+    #min_cluster_size
+    
+    min_cluster_size_v = [1, 2, 3, 4, 9, 10, 100]
+    
+    #cluster_selection_epsilon
+    
+    cluster_selection_epsilon_v = [0.1, 0.2, 0.3, 0.4, 0.5, 4.0]
+    
+    #q_plot - 1 if one wants plot, 0 if not.
+    q_plot = 0
+    
+    
+    ###############################################
+    #Main loop
+    ###############################################
+    for l in range(1,len(data)):
+        for n_neighbors in n_neighbors_v:
+            for min_dist in min_dist_v:
+                for n_components in n_components_v:
+                    for min_sample in min_samples_v:
+                        for min_cluster_size in min_cluster_size_v:
+                            for cluster_selection_epsilon in cluster_selection_epsilon_v:
+                                
+                                
+                                num_clusters_found, ratio_clustered, clusterer = draw_umap_hdbscan(data, n_neighbors, 
+                                                        min_dist, 
+                                                        n_components, 
+                                                        metric, 
+                                                        min_sample, 
+                                                        min_cluster_size,
+                                                        cluster_selection_epsilon,
+                                                        q_plot)
+                                
+                                
+                                indexes = np.where(clusterer.labels_ != -1)
+                                
+                                ground_truth_cluster_p = ground_truth_cluster[indexes]
+                                clusterer_p = clusterer.labels_[indexes]
+                                
+                                
+                                
+                                clusteringLabels.append(clusterer_p)
+                                hyperParam.append(np.array([n_neighbors, min_dist, n_components, min_sample, min_cluster_size,cluster_selection_epsilon]))
+                                performanceParam.append(np.array([num_clusters_found, NIDandNVD(ground_truth_cluster_p, clusterer_p), ratio_clustered]))
+                                
                         
-                        
-                        num_clusters_found, ratio_clustered, clusterer = draw_umap_hdbscan(n_neighbors, 
-                                                min_dist, 
-                                                n_components, 
-                                                metric, 
-                                                min_sample, 
-                                                min_cluster,
-                                                cluster_selection_epsilon,
-                                                q_plot)
-                        
-                        
-                        indexes = np.where(clusterer != -1)
-                        
-                        ground_truth_cluster_p = ground_truth_cluster[indexes]
-                        clusterer_p = clusterer[indexes]
-                        
-                        
-                        
-                        clusteringLabels.append(clusterer)
-                        hyperParam.append(np.array([n_neighbors, min_dist, n_components, min_sample, min_cluster,cluster_selection_epsilon]))
-                        performanceParam.append(num_clusters_found, NIDandNVD(ground_truth_cluster_p, clusterer_p), ratio_clustered)
-                        
-                
-
-
-
-
-
-
-###############################################
-#Saving results
-##############################################
-np.savetxt("clusteringLabels.csv",  
-           clusteringLabels, 
-           delimiter =", ",  
-           fmt ='% s')
-np.savetxt("hyperParam.csv",  
-           hyperParam, 
-           delimiter =", ",  
-           fmt ='% s')
-np.savetxt("performanceParam.csv",  
-           performanceParam, 
-           delimiter =", ",  
-           fmt ='% s')
+    
+    
+    
+    
+    
+    
+    ###############################################
+    #Saving results
+    ##############################################
+    np.savetxt("clusteringLabels.csv",  
+               clusteringLabels, 
+               delimiter =", ",  
+               fmt ='% s')
+    np.savetxt("hyperParam.csv",  
+               hyperParam, 
+               delimiter =", ",  
+               fmt ='% s')
+    np.savetxt("performanceParam.csv",  
+               performanceParam, 
+               delimiter =", ",  
+               fmt ='% s')
