@@ -4,24 +4,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import source.loss_functions as lfs
 import torch.nn.functional as func
-from torch.nn import functional as F
-from itertools import chain
+
 from sklearn.decomposition import PCA
 from sklearn.metrics import roc_curve, auc
 from torch.utils.tensorboard import SummaryWriter
 import source.utils as utils
-from time import sleep
 import tracemalloc
 PACK_PATH = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/.."
 from pympler import muppy, summary
 from datetime import datetime
 from scipy.optimize import brentq
 from scipy.interpolate import interp1d
-import matplotlib.pyplot as plt
-from matplotlib import rc
 
-from datetime import datetime
-from sklearn.metrics import roc_curve, auc, average_precision_score, f1_score
 
 def folders(folderpath):
     folderpathHist = os.path.join(folderpath, 'histograms')
@@ -133,7 +127,7 @@ def dat2canvas(data):
             else: canvas[(y*dh):(y*dh)+28, (x*dw):(x*dw)+28, :] = tmp
     if(dc == 1):
         canvas = gray2rgb(gray=canvas)
-
+        
     return canvas
 
 def save_img(contents, names=["", "", ""], savename=""):
@@ -219,7 +213,7 @@ def torch2npy(input):
 
 
 
-def roc(labels, scores, folderpath):
+def roc(labels, scores, folderpath, name):
     """Compute ROC curve and ROC area for each class"""
     fpr = dict()
     tpr = dict()
@@ -243,7 +237,7 @@ def roc(labels, scores, folderpath):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Receiver operating characteristic')
+    plt.title('Receiver operating characteristic with ' + name)
     plt.legend(loc="lower right")
     plt.savefig(folderpath+'ROC.png')
     plt.close()
@@ -251,37 +245,6 @@ def roc(labels, scores, folderpath):
     return roc_auc
 
 
-
-
-
-
-def ThreeDimPCAPlot():
-    
-    return None
-
-
-#This function creates a UMAP-plot of the latent space
-def UMAPPlot():
-    
-    return None
-
-
-#This function creates a kNN of the latent space post-PCA.
-def clustering():
-    
-    return None
-
-
-def folders():
-    timenow = datetime.now().strftime('%Y-%m-%d_%H%M%S')
-    currentpath = os.getcwd()
-    folderpath = os.path.join(currentpath, str(timenow))
-    folderpathHist = os.path.join(folderpath, 'histograms')
-    folderpathBoxplots = os.path.join(folderpath, 'boxplots')
-    
-    folderpathPCAUMAP = os.path.join(folderpath, 'PCA_UMAP')
-    
-    folderpathClustering = os.path.join(folderpath, 'clustering')
 
 def training(neuralnet, dataset, epochs, batch_size):
 
@@ -318,6 +281,12 @@ def training(neuralnet, dataset, epochs, batch_size):
             layer_grad.avg = torch.zeros_like(param)
             ref_grad_dec.append(layer_grad)
     
+    
+    AUC = 0
+    
+    
+    
+    
     for epoch in range(epochs):
 
         x_tr, x_tr_torch, y_tr, y_tr_torch, _ = dataset.next_train(batch_size=test_size, fix=True) # Initial batch
@@ -330,37 +299,7 @@ def training(neuralnet, dataset, epochs, batch_size):
         dis_x, features_real = neuralnet.discriminator(x_tr_torch.to(neuralnet.device))
         dis_x_hat, features_fake = neuralnet.discriminator(x_hat.to(neuralnet.device))
 
-        #z_code = torch2npy(z_code)
-        #x_hat = np.transpose(torch2npy(x_hat), (0, 2, 3, 1))
-        
-        
-        # if(neuralnet.z_dim == 2):
-        #     latent_plot(latent=z_code, y=y_tr, n=dataset.num_class, \
-        #         savename=os.path.join("results", "tr_latent", "%08d.png" %(epoch)))
-        # else:
-        #     pca = PCA(n_components=2)
-        #     try:
-        #         pca_features = pca.fit_transform(z_code)
-        #         latent_plot(latent=pca_features, y=y_tr, n=dataset.num_class, \
-        #         savename=os.path.join("results", "tr_latent", "%08d.png" %(epoch)))
-        #     except: pass
-
-        # save_img(contents=[x_tr, x_hat, (x_tr-x_hat)**2], \
-        #     names=["Input\n(x)", "Restoration\n(x to x-hat)", "Difference"], \
-        #     savename=os.path.join("results", "tr_resotring", "%08d.png" %(epoch)))
-
-        # if(neuralnet.z_dim == 2):
-        #     x_values = np.linspace(-3, 3, test_sq)
-        #     y_values = np.linspace(-3, 3, test_sq)
-        #     z_latents = None
-        #     for y_loc, y_val in enumerate(y_values):
-        #         for x_loc, x_val in enumerate(x_values):
-        #             z_latent = np.reshape(np.array([y_val, x_val], dtype=np.float32), (1, neuralnet.z_dim))
-        #             if(z_latents is None): z_latents = z_latent
-        #             else: z_latents = np.append(z_latents, z_latent, axis=0)
-        #     x_samples = neuralnet.decoder(torch.from_numpy(z_latents).to(neuralnet.device))
-        #     x_samples = np.transpose(torch2npy(x_samples), (0, 2, 3, 1))
-        #     plt.imsave(os.path.join("results", "tr_latent_walk", "%08d.png" %(epoch)), dat2canvas(data=x_samples))
+     
         batch_iter = 0
         while(True):
             batch_iter = batch_iter + 1
@@ -493,6 +432,22 @@ def training(neuralnet, dataset, epochs, batch_size):
             writer.add_scalar('GANomaly/L_grad', grad_loss, iteration)
             writer.add_scalar('GANomaly/loss_total', l_tot, iteration)
             
+            
+            
+            
+            if(epoch % 100 == 0 and epoch > 100):
+                
+                
+                AUC_new = validation(neuralnet, dataset)
+                
+                
+                if(AUC_new < AUC): #This indicates overfitting. It performs worse on the test-set
+                    break
+                else:
+                    AUC = AUC_new
+                
+                
+            
             iteration += 1
             if(terminator): break
 
@@ -510,6 +465,13 @@ def training(neuralnet, dataset, epochs, batch_size):
     save_graph(contents=list_grad, xlabel="Iteration", ylabel="Adv Error", savename="l_grad")
     save_graph(contents=list_tot, xlabel="Iteration", ylabel="Total Loss", savename="l_tot")
 
+  
+#Validation, meant to curb overfitting
+#The coefficient of interest is the AUC score. 
+
+
+
+
 def validation(neuralnet, dataset, epochs, batch_size):
     
     print("Validating ...")
@@ -518,12 +480,11 @@ def validation(neuralnet, dataset, epochs, batch_size):
     test_sq = 20
     test_size = test_sq**2
     
-    
-    
+    iteration = 0
     ref_grad_enc = []
     ref_grad_dec = []
     
-    
+    AUC = 0
     for name, param in neuralnet.encoder.named_parameters():
         if name.endswith('weight'):
             layer_grad = utils.AverageMeter()
@@ -537,7 +498,7 @@ def validation(neuralnet, dataset, epochs, batch_size):
     
     for epoch in range(epochs):
 
-        x_tr, x_tr_torch, y_tr, y_tr_torch, _ = dataset.next_train(batch_size=test_size, fix=True) # Initial batch
+        x_tr, x_tr_torch, y_tr, y_tr_torch, _ = dataset.next_validate(batch_size=test_size, fix=True) # Initial batch
 
         z_code = neuralnet.encoder(x_tr_torch.to(neuralnet.device))
         x_hat = neuralnet.decoder(z_code.to(neuralnet.device))
@@ -547,42 +508,12 @@ def validation(neuralnet, dataset, epochs, batch_size):
         dis_x, features_real = neuralnet.discriminator(x_tr_torch.to(neuralnet.device))
         dis_x_hat, features_fake = neuralnet.discriminator(x_hat.to(neuralnet.device))
 
-        #z_code = torch2npy(z_code)
-        #x_hat = np.transpose(torch2npy(x_hat), (0, 2, 3, 1))
-        
-        
-        # if(neuralnet.z_dim == 2):
-        #     latent_plot(latent=z_code, y=y_tr, n=dataset.num_class, \
-        #         savename=os.path.join("results", "tr_latent", "%08d.png" %(epoch)))
-        # else:
-        #     pca = PCA(n_components=2)
-        #     try:
-        #         pca_features = pca.fit_transform(z_code)
-        #         latent_plot(latent=pca_features, y=y_tr, n=dataset.num_class, \
-        #         savename=os.path.join("results", "tr_latent", "%08d.png" %(epoch)))
-        #     except: pass
-
-        # save_img(contents=[x_tr, x_hat, (x_tr-x_hat)**2], \
-        #     names=["Input\n(x)", "Restoration\n(x to x-hat)", "Difference"], \
-        #     savename=os.path.join("results", "tr_resotring", "%08d.png" %(epoch)))
-
-        # if(neuralnet.z_dim == 2):
-        #     x_values = np.linspace(-3, 3, test_sq)
-        #     y_values = np.linspace(-3, 3, test_sq)
-        #     z_latents = None
-        #     for y_loc, y_val in enumerate(y_values):
-        #         for x_loc, x_val in enumerate(x_values):
-        #             z_latent = np.reshape(np.array([y_val, x_val], dtype=np.float32), (1, neuralnet.z_dim))
-        #             if(z_latents is None): z_latents = z_latent
-        #             else: z_latents = np.append(z_latents, z_latent, axis=0)
-        #     x_samples = neuralnet.decoder(torch.from_numpy(z_latents).to(neuralnet.device))
-        #     x_samples = np.transpose(torch2npy(x_samples), (0, 2, 3, 1))
-        #     plt.imsave(os.path.join("results", "tr_latent_walk", "%08d.png" %(epoch)), dat2canvas(data=x_samples))
+    
         batch_iter = 0
         while(True):
             batch_iter = batch_iter + 1
            
-            x_tr, x_tr_torch, y_tr, y_tr_torch, terminator = dataset.next_train(batch_size)
+            x_tr, x_tr_torch, y_tr, y_tr_torch, terminator = dataset.next_validate(batch_size)
 
             z_code = neuralnet.encoder(x_tr_torch.to(neuralnet.device))
             x_hat = neuralnet.decoder(z_code.to(neuralnet.device))
@@ -653,11 +584,8 @@ def validation(neuralnet, dataset, epochs, batch_size):
 
             l_grad = grad_loss
             
-            
-            l_tot = l_tot + grad_loss
-            neuralnet.optimizer.zero_grad()
             #l_tot.backward(retain_graph = True)
-            l_tot.backward()
+           # l_tot.backward()
             # Update the reference gradient
             l = 0
             for (name, param) in neuralnet.encoder.named_parameters():
@@ -670,43 +598,20 @@ def validation(neuralnet, dataset, epochs, batch_size):
                 ref_grad_dec[i].update(param.grad, 1)
                 i = i + 1
 
-            neuralnet.optimizer.step()
-            
-            #z_code = torch2npy(z_code)
-            #x_hat = np.transpose(torch2npy(x_hat), (0, 2, 3, 1))
 
-
-           # for i in range(2):
-            #    l = 0
-             #   for param in neuralnet.encoder.parameters():
-              #      l = l +1
-               #     if(l==28-2*i):
-                #        ref_grad[i].update(param.grad,1)
-                
+            #Evaluation stage
             
             
-            print("Batch iteration is: ")
-            print(batch_iter)
-            
-            print("Percentage of available memory")
-            print(psutil.virtual_memory().available * 100 / psutil.virtual_memory().total)
-
-            current, peak = tracemalloc.get_traced_memory()
-
-            print("Current memory usage is MB")
-            print(current/10**6)
-            print("Peak was MB")
-            print(peak/10**6)
-              
             iteration += 1
             if(terminator): break
+
+    return AUC
 
 
 
 
 def test(neuralnet, dataset, inlier_classes):
 
-    
 
     #Preperation stage
 
@@ -745,9 +650,9 @@ def test(neuralnet, dataset, inlier_classes):
     
     
     
-    
+    #########################################################################
     #Inference stage - for producing histograms
-    
+    #########################################################################
     label = []
     
     scores_con = []
@@ -838,9 +743,9 @@ def test(neuralnet, dataset, inlier_classes):
     z_code_tot, y_te_tot = None, None
     loss4box = [[], [], [], [], [], [], [], [], [], []]
     
-    
+    #########################################################################
     #Inference stage - for producing latent space
-    
+    #########################################################################
     while(True):
         x_te, x_te_torch, y_te, y_te_torch, terminator = dataset.next_test(1) # y_te does not used in this prj.
 
@@ -868,19 +773,7 @@ def test(neuralnet, dataset, inlier_classes):
             z_code_tot = np.append(z_code_tot, z_code, axis=0)
             y_te_tot = np.append(y_te_tot, y_te, axis=0)
 
-        #outcheck = score_anomaly > outbound
-        #fcsv.write("%d, %.3f, %r\n" %(y_te, score_anomaly, outcheck))
-
-        #[h, w, c] = x_te[0].shape
-        #canvas = np.ones((h, w*3, c), np.float32)
-        #canvas[:, :w, :] = x_te[0]
-        #canvas[:, w:w*2, :] = x_hat[0]
-        #canvas[:, w*2:, :] = (x_te[0]-x_hat[0])**2
-        #if(outcheck):
-        #    plt.imsave(os.path.join("test", "outbound", "%08d-%08d.png" %(testnum, int(score_anomaly))), gray2rgb(gray=canvas))
-        #else:
-        #    plt.imsave(os.path.join("test", "inbound", "%08d-%08d.png" %(testnum, int(score_anomaly))), gray2rgb(gray=canvas))
-
+       
         testnum += 1
 
         if(terminator): break
@@ -902,15 +795,19 @@ def test(neuralnet, dataset, inlier_classes):
     
 
 
+    
 
+    #########################################################################
     #Inference stage - for collecting Lgrad weights and subsequent clustering
-
-    target_grad_list_enc = []
-    target_grad_list_dec = []    
+    #########################################################################
+    target_grad_list_enc = [] #These contains Lgrad weights for the enc
+    target_grad_list_dec = [] #These contains Lgrad weights for the dec
+    
+    labels = [] #Contains labels for y_te
         
     while(True):
             x_te, x_te_torch, y_te, y_te_torch, terminator = dataset.next_test(1) # y_te does not used in this prj.
-    
+            labels.append(y_te)
             z_code = neuralnet.encoder(x_te_torch.to(neuralnet.device))
             x_hat = neuralnet.decoder(z_code.to(neuralnet.device))
             z_code_hat = neuralnet.encoder(x_hat.to(neuralnet.device))
@@ -979,15 +876,15 @@ def test(neuralnet, dataset, inlier_classes):
     target_grad_list_dec = np.array(target_grad_list_dec)
     target_grad_list_enc = np.array(target_grad_list_enc)
     
-    np.savetxt("LgradWeightsEnc.csv",  
+    np.savetxt(folderpath + "LgradWeightsEnc.csv",  
            target_grad_list_enc, 
            delimiter =", ",  
            fmt ='% s')
-    np.savetxt("LgradWeightsDec.csv",  
+    np.savetxt(folderpath + "LgradWeightsDec.csv",  
            target_grad_list_dec, 
            delimiter =", ",  
            fmt ='% s')
-    np.savetxt("labels.csv",  
+    np.savetxt(folderpath + "labels.csv",  
            label, 
            delimiter =", ",  
            fmt ='% s')
@@ -998,6 +895,20 @@ def test(neuralnet, dataset, inlier_classes):
     HistogramsCustomAnomaly(scores_custom, label)
     
     
+    #########################################################################
+    #Inference stage - producing ROC curves from anomaly scores
+    #########################################################################
+    
+    
+    
+    roc(labels, scores_custom, folderpath, "Custom Score")
+    roc(labels, scores_grad, folderpath, "Lgrad Score")
+    roc(labels, scores_con, folderpath, "Con score")
+    roc(labels, scores_enc, folderpath, "Enc score")
+    roc(labels, scores_adv, folderpath, "Adv score")
+    
+    
+    return folderpath
 
 
 

@@ -6,11 +6,16 @@ import tracemalloc
 import source.neuralnet as nn
 import source.datamanager as dman
 import source.solver as solver
-
+import source.clusteringScript as clusteringScript
 
 
 
 def main():
+
+    
+    tracemalloc.start()
+
+
 
     dataset = dman.Dataset(normalize=FLAGS.datnorm, data=FLAGS.dataset, inlier=FLAGS.Inlier_Classes, Inlier_size=FLAGS.Inlier_size, Outlier_size=FLAGS.Outlier_size)
 
@@ -18,7 +23,6 @@ def main():
     device = torch.device("cuda" if (torch.cuda.is_available() and FLAGS.ngpu > 0) else "cpu")
     
     
-    tracemalloc.start()
     
     #Intitiating neuralnet
     neuralnet = nn.NeuralNet(height=dataset.height, width=dataset.width, channel=dataset.channel, \
@@ -27,11 +31,12 @@ def main():
     #Training
     solver.training(neuralnet=neuralnet, dataset=dataset, epochs=FLAGS.epoch, batch_size=FLAGS.batch, Lgrad_weight=FLAGS.Lgrad_weight, split=FLAGS.Split)
     #Validation
-    solver.validation(neuralnet=neuralnet, dataset=dataset, split=FLAGS.Split)
+    #solver.validation(neuralnet=neuralnet, dataset=dataset, split=FLAGS.Split)
     #Testing
-    solver.test(neuralnet=neuralnet, dataset=dataset, split=FLAGS.Split,inlier=FLAGS.Inlier_Classes)
+    folderpath = solver.test(neuralnet=neuralnet, dataset=dataset, split=FLAGS.Split,inlier=FLAGS.Inlier_Classes)
+    #Clusterng
+    clusteringScript.clustering(folderpath)
     
-
     #All evaluation occurs in the end of these methods.
 
 if __name__ == '__main__':

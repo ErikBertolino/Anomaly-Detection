@@ -155,98 +155,98 @@ def NIDandNVD(Cluster_1, Cluster_2):
 #Importing data
 ###############################################
 
-
-data = None
-ground_truth_clustering = None
-
-###############################################
-#Setting up Hyperparameters
-###############################################
-
-
-#We want to save the performance parameters, the clustering labels, the plot
-#and the hyperparameters
-
-hyperParam, performanceParam, clusteringLabels = [], [], []
-
-##Hyperparameters
-#metric  [ 'euclidean', "manhattan", "chebyshev", "minkowski", "canberra", "braycurtis", "mahalanobis", "wminkowski", "seuclidean", "cosine", "correlation", "hamming", "jaccard", "dice", "kulsinski", "ll_dirichlet", "hellinger", "rogerstanimoto", "sokalmichener", "sokalsneath", "yule" ]:
-metric = 'euclidean'
-
-#n_neighbors
-n_neighbors_v = range(2,10)
-
-#min_dist
-
-min_dist_v = range(1)
-
-#n_components
-
-n_components_v = range(3,4)
-
-#min_samples
-
-min_samples_v = [ 10]
-
-#min_cluster_size
-
-min_cluster_size_v = [1, 2, 3, 4, 9, 10, 100]
-
-#cluster_selection_epsilon
-
-cluster_selection_epsilon_v = [0.1, 0.2, 0.3, 0.4, 0.5, 4.0]
-
-#q_plot - 1 if one wants plot, 0 if not.
-q_plot = 1
-
-l = len(n_neighbors_v)*len(min_dist_v)*len(n_components_v)*len(min_samples_v)*len(min_cluster_size_v)*len(cluster_selection_epsilon_v)
-k = 0
-###############################################
-#Main loop
-###############################################
-for n_neighbors in n_neighbors_v:
-    for min_dist in min_dist_v:
-        for n_components in n_components_v:
-            for min_sample in min_samples_v:
-                for min_cluster in min_cluster_size_v:
-                        
-                        k = k +1
-                        print((k/l)*100)
-                        print("Percentage done")
-                        num_clusters_found, ratio_clustered, clusterer = draw_umap_hdbscan(data,n_neighbors, 
-                                                min_dist, 
-                                                n_components, 
-                                                metric, 
-                                                min_sample, 
-                                                min_cluster)
-                        
-                        
-                        labels = clusterer.labels_
-                        
-                        clustered = (labels >= 0)
-                       
-                       # indexes = np.where(clusterer.labels_ != -1)
-                        
-                        ground_truth_cluster_p = ground_truth_clustering[clustered]
-                        clusterer_p = clusterer.labels_[clustered]
-                        NID, NVD = NIDandNVD(ground_truth_cluster_p, clusterer_p)
-                        clusteringLabels.append(clusterer)
-                        hyperParam.append(np.array([n_neighbors, min_dist, n_components, min_sample, min_cluster]))
-                        performanceParam.append(np.array([num_clusters_found,NID,NVD,adjusted_rand_score(ground_truth_clustering[clustered], labels[clustered]), adjusted_mutual_info_score(ground_truth_clustering[clustered], labels[clustered]), ratio_clustered]))
-                        
-
-##############################################
-#Creating folder and Saving results
-##############################################
-np.savetxt("clusteringLabels.csv",  
-           clusteringLabels, 
-           delimiter =", ",  
-           fmt ='% s')
-np.savetxt("hyperParam.csv",  
-           hyperParam, 
-           delimiter =", ",  
-           fmt ='% s')
-np.savetxt("performanceParam.csv",  
-           performanceParam, 
-           delimiter =", ",  
-           fmt ='% s')
+def clustering(folderpath):
+    data = None
+    ground_truth_clustering = None
+    
+    ###############################################
+    #Setting up Hyperparameters
+    ###############################################
+    
+    
+    #We want to save the performance parameters, the clustering labels, the plot
+    #and the hyperparameters
+    
+    hyperParam, performanceParam, clusteringLabels = [], [], []
+    
+    ##Hyperparameters
+    #metric  [ 'euclidean', "manhattan", "chebyshev", "minkowski", "canberra", "braycurtis", "mahalanobis", "wminkowski", "seuclidean", "cosine", "correlation", "hamming", "jaccard", "dice", "kulsinski", "ll_dirichlet", "hellinger", "rogerstanimoto", "sokalmichener", "sokalsneath", "yule" ]:
+    metric = 'euclidean'
+    
+    #n_neighbors
+    n_neighbors_v = range(2,10)
+    
+    #min_dist
+    
+    min_dist_v = range(1)
+    
+    #n_components
+    
+    n_components_v = range(3,4)
+    
+    #min_samples
+    
+    min_samples_v = [ 10]
+    
+    #min_cluster_size
+    
+    min_cluster_size_v = [1, 2, 3, 4, 9, 10, 100]
+    
+    #cluster_selection_epsilon
+    
+    cluster_selection_epsilon_v = [0.1, 0.2, 0.3, 0.4, 0.5, 4.0]
+    
+    #q_plot - 1 if one wants plot, 0 if not.
+    q_plot = 1
+    
+    l = len(n_neighbors_v)*len(min_dist_v)*len(n_components_v)*len(min_samples_v)*len(min_cluster_size_v)*len(cluster_selection_epsilon_v)
+    k = 0
+    ###############################################
+    #Main loop
+    ###############################################
+    for n_neighbors in n_neighbors_v:
+        for min_dist in min_dist_v:
+            for n_components in n_components_v:
+                for min_sample in min_samples_v:
+                    for min_cluster in min_cluster_size_v:
+                            
+                            k = k +1
+                            print((k/l)*100)
+                            print("Percentage done")
+                            num_clusters_found, ratio_clustered, clusterer = draw_umap_hdbscan(data,n_neighbors, 
+                                                    min_dist, 
+                                                    n_components, 
+                                                    metric, 
+                                                    min_sample, 
+                                                    min_cluster)
+                            
+                            
+                            labels = clusterer.labels_
+                            
+                            clustered = (labels >= 0)
+                           
+                           # indexes = np.where(clusterer.labels_ != -1)
+                            
+                            ground_truth_cluster_p = ground_truth_clustering[clustered]
+                            clusterer_p = clusterer.labels_[clustered]
+                            NID, NVD = NIDandNVD(ground_truth_cluster_p, clusterer_p)
+                            clusteringLabels.append(clusterer)
+                            hyperParam.append(np.array([n_neighbors, min_dist, n_components, min_sample, min_cluster]))
+                            performanceParam.append(np.array([num_clusters_found,NID,NVD,adjusted_rand_score(ground_truth_clustering[clustered], labels[clustered]), adjusted_mutual_info_score(ground_truth_clustering[clustered], labels[clustered]), ratio_clustered]))
+                            
+    
+    ##############################################
+    #Creating folder and Saving results
+    ##############################################
+    np.savetxt("clusteringLabels.csv",  
+               clusteringLabels, 
+               delimiter =", ",  
+               fmt ='% s')
+    np.savetxt("hyperParam.csv",  
+               hyperParam, 
+               delimiter =", ",  
+               fmt ='% s')
+    np.savetxt("performanceParam.csv",  
+               performanceParam, 
+               delimiter =", ",  
+               fmt ='% s')
