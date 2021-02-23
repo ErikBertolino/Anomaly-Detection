@@ -78,8 +78,10 @@ class Dataset(object):
         
         x_normal, y_normal = None, None
         x_abnormal, y_abnormal = None, None
+        k, l = 0, 0
         for yidx, y in enumerate(y_tot):
-
+            
+            if(k > 4*size and l > 4*size): break
             x_tmp = np.expand_dims(x_tot[yidx], axis=0)
             y_tmp = np.expand_dims(y_tot[yidx], axis=0)
 
@@ -88,29 +90,34 @@ class Dataset(object):
                     x_normal = x_tmp
                     y_normal = y_tmp
                 else:
-                    x_normal = np.append(x_normal, x_tmp, axis=0)
-                    y_normal = np.append(y_normal, y_tmp, axis=0)
+                    if(x_normal.shape[0] < 4*size):
+                        k = k + 1
+                        x_normal = np.append(x_normal, x_tmp, axis=0)
+                        y_normal = np.append(y_normal, y_tmp, axis=0)
 
             else: # as abnormal
                 if(x_abnormal is None):
                     x_abnormal = x_tmp
                     y_abnormal = y_tmp
                 else:
-                    if(x_abnormal.shape[0] < size/2):
+                    if(x_abnormal.shape[0] < 4*size):
+                        l = l + 1
                         x_abnormal = np.append(x_abnormal, x_tmp, axis=0)
                         y_abnormal = np.append(y_abnormal, y_tmp, axis=0)
+                        
+                        
+           # if(not(x_normal is None) and not(x_abnormal is None)):
+          #      if((x_normal.shape[0] >= 2*size) and x_abnormal.shape[0] >= 2*size+1 ): break
 
-            if(not(x_normal is None) and not(x_abnormal is None)):
-                if((x_normal.shape[0] >= 2*size) and x_abnormal.shape[0] >= size): break
-
-        self.x_tr, self.y_tr = x_normal[:size], y_normal[:size]
-        self.x_te, self.y_te = x_normal[size:], y_normal[size:]
+        self.x_tr, self.y_tr = x_normal[:2*size], y_normal[:2*size]
+        self.x_te, self.y_te = x_normal[2*size:], y_normal[2*size:]
         
         #Some classes are picked out at random for use in the validation stage
         #These classes will reappear in the testing stage, but it will be new
         #data instances
         
-        
+        print(len(x_abnormal))
+        print(len(x_normal))
         classes = np.unique([y_abnormal])
         length = len(classes)
         rndm = np.random.permutation(classes)
@@ -122,24 +129,25 @@ class Dataset(object):
         print("Outlier classes used in validation : " )
         print(rndm)
         
-        IndexList = []
+        IndexList = np.asarray([])
         for label in rndm:
-            indexes = np.where(y_abnormal==label)
-            l = length(indexes)
-            indexes = indexes[:l]
-            IndexList.append(indexes)
+            indexes = np.where(self.y_te==label)
+            indexes = np.asarray(indexes)
+            indexes = indexes.astype(int)
+            IndexList = np.append(IndexList,indexes)
             
             
-            
-        self.x_vd = np.append(self.x_vd, x_abnormal[IndexList],axis=0)
-        self.y_vd = np.append(self.y_vd, y_abnormal[IndexList],axis=0)
+        IndexList = IndexList.astype(int)
+        self.x_vd = x_abnormal[IndexList]
+        self.y_vd = y_abnormal[IndexList]
         
-        v=np.array([range(1,size)])
+        v=np.array([range(1,2*size)])
         v = np.delete(v,IndexList)
         
-        self.x_te = np.append(self.x_te, x_abnormal[v], axis=0)
-        self.y_te = np.append(self.y_te, y_abnormal[v], axis=0)
+        self.x_te = np.append(self.x_te, x_abnormal[v], axis = 0) #Adding abnormal 
+        self.y_te = np.append(self.y_te, y_abnormal[v], axis = 0)
 
+        
     def reset_idx(self): self.idx_tr, self.idx_te = 0, 0
 
     def next_train(self, batch_size=1, fix=False):

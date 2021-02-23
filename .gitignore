@@ -1,0 +1,139 @@
+
+2021-01-18_021101/Inlier Classes.txt
+2021-02-21_032312/Inlier Classes.txt
+2021-02-21_032312/PCA_UMAP/PCAPlotOfLatentSpace.png
+2021-02-21_040315/Inlier Classes.txt
+2021-02-21_040315/PCA_UMAP/PCAPlotOfLatentSpace.png
+2021-02-21_135634/Inlier Classes.txt
+2021-02-21_163735/Inlier Classes.txt
+2021-02-21_163735/PCA_UMAP/PCAPlotOfLatentSpace.png
+2021-02-21_180342/Inlier Classes.txt
+2021-02-21_180342/PCA_UMAP/PCAPlotOfLatentSpace.png
+2021-02-21_191716/histograms/Multiple Histograms - MSE.png
+2021-02-21_191716/Inlier Classes.txt
+2021-02-21_191716/PCA_UMAP/PCAPlotOfLatentSpace.png
+2021-02-21_204520/histograms/Multiple Histograms - Adv.png
+2021-02-21_204520/histograms/Multiple Histograms - Enc.png
+2021-02-21_204520/histograms/Multiple Histograms - MSE.png
+2021-02-21_204520/Inlier Classes.txt
+2021-02-21_204520/PCA_UMAP/PCAPlotOfLatentSpace.png
+2021-02-21_215103/histograms/Multiple Histograms - Adv.png
+2021-02-21_215103/histograms/Multiple Histograms - Enc.png
+2021-02-21_215103/histograms/Multiple Histograms - MSE.png
+2021-02-21_215103/Inlier Classes.txt
+2021-02-21_215103/PCA_UMAP/PCAPlotOfLatentSpace.png
+2021-02-21_225830/histograms/Multiple Histograms - Adv.png
+2021-02-21_225830/histograms/Multiple Histograms - Enc.png
+2021-02-21_225830/histograms/Multiple Histograms - MSE.png
+2021-02-21_225830/Inlier Classes.txt
+2021-02-21_225830/PCA_UMAP/PCAPlotOfLatentSpace.png
+2021-02-22_000644/histograms/Multiple Histograms - Adv.png
+2021-02-22_000644/histograms/Multiple Histograms - Enc.png
+2021-02-22_000644/histograms/Multiple Histograms - MSE.png
+2021-02-22_000644/Inlier Classes.txt
+2021-02-22_000644/PCA_UMAP/PCAPlotOfLatentSpace.png
+2021-02-22_011646/histograms/Multiple Histograms - Adv.png
+2021-02-22_011646/histograms/Multiple Histograms - Enc.png
+2021-02-22_011646/histograms/Multiple Histograms - MSE.png
+2021-02-22_011646/Inlier Classes.txt
+2021-02-22_011646/PCA_UMAP/PCAPlotOfLatentSpace.png
+2021-02-22_022217/histograms/Multiple Histograms - Adv.png
+2021-02-22_022217/histograms/Multiple Histograms - Enc.png
+2021-02-22_022217/histograms/Multiple Histograms - MSE.png
+2021-02-22_022217/Inlier Classes.txt
+2021-02-22_022217/PCA_UMAP/PCAPlotOfLatentSpace.png
+2021-02-22_123834/histograms/Multiple Histograms - Adv.png
+2021-02-22_123834/histograms/Multiple Histograms - custom anomaly score.png
+2021-02-22_123834/histograms/Multiple Histograms - Enc.png
+2021-02-22_123834/histograms/Multiple Histograms - MSE.png
+2021-02-22_123834/Inlier Classes.txt
+2021-02-22_123834/PCA_UMAP/PCAPlotOfLatentSpace.png
+2021-02-22_123834/Plots/Custom ScoreROC.png
+2021-02-22_123834/Plots/Lgrad ScoreROC.png
+2021-02-22_123834/PlotsCustom ScoreROC.png
+2021-02-22_123834/Weights/LgradWeightsDec.csv
+2021-02-22_123834/Weights/LgradWeightsEnc.csv
+2021-02-22_123834/Weightslabels.csv
+2021-02-22_233148/Inlier Classes.txt
+2021-02-23_031033/Inlier Classes.txt
+2021-02-23_150348/Inlier Classes.txt
+2021-02-23_204041/Inlier Classes.txt
+l_adv.npy
+l_adv.png
+l_con.npy
+l_con.png
+l_enc.npy
+l_enc.png
+l_grad.npy
+l_grad.png
+l_tot.npy
+l_tot.png
+run.py
+runs/Dec11_17-46-18_DESKTOP-6GV8SKV/events.out.tfevents.1607705178.DESKTOP-6GV8SKV.2268.0
+runs/Dec11_17-52-40_DESKTOP-6GV8SKV/events.out.tfevents.1607705560.DESKTOP-6GV8SKV.1396.0
+runs/Dec11_18-51-17_DESKTOP-6GV8SKV/events.out.tfevents.1607709077.DESKTOP-6GV8SKV.12668.0
+runs/Dec11_18-52-04_DESKTOP-6GV8SKV/events.out.tfevents.1607709124.DESKTOP-6GV8SKV.22264.0
+runs/Dec21_16-43-58_DESKTOP-D02ETRR/events.out.tfevents.1608565438.DESKTOP-D02ETRR.4548.0
+runs/Dec21_16-54-41_DESKTOP-D02ETRR/events.out.tfevents.1608566081.DESKTOP-D02ETRR.7588.0
+runs/Feb18_12-43-04_DESKTOP-6GV8SKV/events.out.tfevents.1613648584.DESKTOP-6GV8SKV.27616.0
+runs/Feb18_13-27-20_DESKTOP-6GV8SKV/events.out.tfevents.1613651240.DESKTOP-6GV8SKV.27616.1
+runs/Feb18_13-48-11_DESKTOP-6GV8SKV/events.out.tfevents.1613652491.DESKTOP-6GV8SKV.27616.2
+runs/Feb18_15-15-18_DESKTOP-6GV8SKV/events.out.tfevents.1613657718.DESKTOP-6GV8SKV.27616.3
+runs/Feb18_15-30-02_DESKTOP-6GV8SKV/events.out.tfevents.1613658602.DESKTOP-6GV8SKV.27616.4
+runs/Feb18_16-59-22_DESKTOP-6GV8SKV/events.out.tfevents.1613663962.DESKTOP-6GV8SKV.4044.0
+runs/Feb18_18-05-47_DESKTOP-6GV8SKV/events.out.tfevents.1613667947.DESKTOP-6GV8SKV.1440.0
+runs/Feb18_19-51-38_DESKTOP-6GV8SKV/events.out.tfevents.1613674298.DESKTOP-6GV8SKV.18744.0
+runs/Feb18_20-43-18_DESKTOP-6GV8SKV/events.out.tfevents.1613677398.DESKTOP-6GV8SKV.17856.0
+runs/Feb18_21-12-45_DESKTOP-6GV8SKV/events.out.tfevents.1613679165.DESKTOP-6GV8SKV.17856.1
+runs/Feb18_22-06-39_DESKTOP-6GV8SKV/events.out.tfevents.1613682399.DESKTOP-6GV8SKV.17856.2
+runs/Feb20_02-14-47_DESKTOP-6GV8SKV/events.out.tfevents.1613783687.DESKTOP-6GV8SKV.10920.0
+runs/Feb20_03-02-05_DESKTOP-6GV8SKV/events.out.tfevents.1613786525.DESKTOP-6GV8SKV.11188.0
+runs/Feb20_15-17-59_DESKTOP-6GV8SKV/events.out.tfevents.1613830679.DESKTOP-6GV8SKV.7584.0
+runs/Feb20_15-28-30_DESKTOP-6GV8SKV/events.out.tfevents.1613831310.DESKTOP-6GV8SKV.7584.1
+runs/Feb20_15-42-24_DESKTOP-6GV8SKV/events.out.tfevents.1613832144.DESKTOP-6GV8SKV.7584.2
+runs/Feb20_16-19-56_DESKTOP-6GV8SKV/events.out.tfevents.1613834396.DESKTOP-6GV8SKV.7584.3
+runs/Feb20_20-50-24_DESKTOP-6GV8SKV/events.out.tfevents.1613850624.DESKTOP-6GV8SKV.11136.0
+runs/Feb20_21-10-15_DESKTOP-6GV8SKV/events.out.tfevents.1613851815.DESKTOP-6GV8SKV.11136.1
+runs/Feb20_22-16-39_DESKTOP-6GV8SKV/events.out.tfevents.1613855799.DESKTOP-6GV8SKV.18856.0
+runs/Feb20_22-52-05_DESKTOP-6GV8SKV/events.out.tfevents.1613857925.DESKTOP-6GV8SKV.18856.1
+runs/Feb20_23-09-47_DESKTOP-6GV8SKV/events.out.tfevents.1613858987.DESKTOP-6GV8SKV.18856.2
+runs/Feb20_23-29-34_DESKTOP-6GV8SKV/events.out.tfevents.1613860174.DESKTOP-6GV8SKV.18856.3
+runs/Feb20_23-46-09_DESKTOP-6GV8SKV/events.out.tfevents.1613861169.DESKTOP-6GV8SKV.18856.4
+runs/Feb21_00-38-55_DESKTOP-6GV8SKV/events.out.tfevents.1613864335.DESKTOP-6GV8SKV.18856.5
+runs/Feb21_01-34-24_DESKTOP-6GV8SKV/events.out.tfevents.1613867664.DESKTOP-6GV8SKV.328.0
+runs/Feb21_03-14-44_DESKTOP-6GV8SKV/events.out.tfevents.1613873684.DESKTOP-6GV8SKV.12028.0
+runs/Feb21_03-53-10_DESKTOP-6GV8SKV/events.out.tfevents.1613875990.DESKTOP-6GV8SKV.33324.0
+runs/Feb21_13-46-15_DESKTOP-6GV8SKV/events.out.tfevents.1613911575.DESKTOP-6GV8SKV.13716.0
+runs/Feb21_16-26-36_DESKTOP-6GV8SKV/events.out.tfevents.1613921196.DESKTOP-6GV8SKV.13716.1
+runs/Feb21_17-52-41_DESKTOP-6GV8SKV/events.out.tfevents.1613926361.DESKTOP-6GV8SKV.33444.0
+runs/Feb21_19-07-05_DESKTOP-6GV8SKV/events.out.tfevents.1613930825.DESKTOP-6GV8SKV.32092.0
+runs/Feb21_20-33-52_DESKTOP-6GV8SKV/events.out.tfevents.1613936032.DESKTOP-6GV8SKV.10508.0
+runs/Feb21_20-34-51_DESKTOP-6GV8SKV/events.out.tfevents.1613936091.DESKTOP-6GV8SKV.18016.0
+runs/Feb21_21-39-25_DESKTOP-6GV8SKV/events.out.tfevents.1613939965.DESKTOP-6GV8SKV.18016.1
+runs/Feb21_22-47-14_DESKTOP-6GV8SKV/events.out.tfevents.1613944034.DESKTOP-6GV8SKV.33080.0
+runs/Feb21_23-56-38_DESKTOP-6GV8SKV/events.out.tfevents.1613948198.DESKTOP-6GV8SKV.20304.0
+runs/Feb22_01-06-32_DESKTOP-6GV8SKV/events.out.tfevents.1613952392.DESKTOP-6GV8SKV.20304.1
+runs/Feb22_02-11-34_DESKTOP-6GV8SKV/events.out.tfevents.1613956294.DESKTOP-6GV8SKV.20304.2
+runs/Feb22_12-22-20_DESKTOP-6GV8SKV/events.out.tfevents.1613992940.DESKTOP-6GV8SKV.30508.0
+runs/Feb22_19-40-24_DESKTOP-6GV8SKV/events.out.tfevents.1614019224.DESKTOP-6GV8SKV.15176.0
+runs/Feb22_23-34-12_DESKTOP-6GV8SKV/events.out.tfevents.1614033252.DESKTOP-6GV8SKV.15176.1
+runs/Feb23_11-18-15_DESKTOP-6GV8SKV/events.out.tfevents.1614075495.DESKTOP-6GV8SKV.15176.2
+runs/Feb23_16-50-09_DESKTOP-6GV8SKV/events.out.tfevents.1614095409.DESKTOP-6GV8SKV.15176.3
+runs/params-0
+runs/params-1
+runs/params-2
+source/2D PCA PLOT - Latent Space.png
+source/3D PCA PLOT of Latent Space final.png
+2021-01-18_021101/Inlier Classes.txt
+runs/Dec11_17-46-18_DESKTOP-6GV8SKV/events.out.tfevents.1607705178.DESKTOP-6GV8SKV.2268.0
+runs/Dec11_17-52-40_DESKTOP-6GV8SKV/events.out.tfevents.1607705560.DESKTOP-6GV8SKV.1396.0
+runs/Dec11_18-51-17_DESKTOP-6GV8SKV/events.out.tfevents.1607709077.DESKTOP-6GV8SKV.12668.0
+runs/Dec11_18-52-04_DESKTOP-6GV8SKV/events.out.tfevents.1607709124.DESKTOP-6GV8SKV.22264.0
+runs/Dec21_16-43-58_DESKTOP-D02ETRR/events.out.tfevents.1608565438.DESKTOP-D02ETRR.4548.0
+runs/Dec21_16-54-41_DESKTOP-D02ETRR/events.out.tfevents.1608566081.DESKTOP-D02ETRR.7588.0
+runs/params-0
+runs/params-1
+runs/params-2
+source/2D PCA PLOT - Latent Space.png
+source/3D PCA PLOT of Latent Space final.png
+source/Cumulative variance explained plot - latent space.png

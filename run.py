@@ -6,7 +6,7 @@ import tracemalloc
 import source.neuralnet as nn
 import source.datamanager as dman
 import source.solver as solver
-import source.clusteringScript as clusteringScript
+#import source.clusteringScript as clusteringScript
 
 
 
@@ -17,7 +17,7 @@ def main():
 
 
 
-    dataset = dman.Dataset(normalize=FLAGS.datnorm, data=FLAGS.dataset, inlier=FLAGS.Inlier_Classes, Inlier_size=FLAGS.Inlier_size, Outlier_size=FLAGS.Outlier_size)
+    dataset = dman.Dataset(normalize=FLAGS.datnorm, data=FLAGS.dataset, inlier_classes=FLAGS.Inlier_Classes, size=FLAGS.Outlier_size)
 
     if(not(torch.cuda.is_available())): FLAGS.ngpu = 0
     device = torch.device("cuda" if (torch.cuda.is_available() and FLAGS.ngpu > 0) else "cpu")
@@ -27,15 +27,15 @@ def main():
     #Intitiating neuralnet
     neuralnet = nn.NeuralNet(height=dataset.height, width=dataset.width, channel=dataset.channel, \
         device=device, ngpu=FLAGS.ngpu, \
-        ksize=FLAGS.ksize, z_dim=FLAGS.z_dim, learning_rate=FLAGS.lr, inlier=FLAGS.Inlier_Classes)
+        ksize=FLAGS.ksize, z_dim=FLAGS.z_dim, learning_rate=FLAGS.lr)
     #Training
-    solver.training(neuralnet=neuralnet, dataset=dataset, epochs=FLAGS.epoch, batch_size=FLAGS.batch, Lgrad_weight=FLAGS.Lgrad_weight, split=FLAGS.Split)
+    ref_grad_enc, ref_grad_dec = solver.training(neuralnet=neuralnet, dataset=dataset, epochs=FLAGS.epoch, batch_size=FLAGS.batch, Lgrad_weight=FLAGS.Lgrad_weight)
     #Validation
     #solver.validation(neuralnet=neuralnet, dataset=dataset, split=FLAGS.Split)
     #Testing
-    folderpath = solver.test(neuralnet=neuralnet, dataset=dataset, split=FLAGS.Split,inlier=FLAGS.Inlier_Classes)
+    folderpath = solver.test(ref_grad_enc, ref_grad_dec,neuralnet=neuralnet, dataset=dataset,inlier_classes=FLAGS.Inlier_Classes)
     #Clusterng
-    clusteringScript.clustering(folderpath)
+#    clusteringScript.clustering(folderpath)
     
     #All evaluation occurs in the end of these methods.
 
@@ -48,8 +48,8 @@ if __name__ == '__main__':
     parser.add_argument('--ksize', type=int, default=3, help='kernel size for constructing Neural Network')
     parser.add_argument('--z_dim', type=int, default=128, help='Dimension of latent vector')
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate for training')
-    parser.add_argument('--epoch', type=int, default=1, help='Training epoch')
-    parser.add_argument('--batch', type=int, default=5, help='Mini batch size')
+    parser.add_argument('--epoch', type=int, default=20, help='Training epoch')
+    parser.add_argument('--batch', type=int, default=32, help='Mini batch size')
     parser.add_argument('--Inlier_Classes', type=int, default=[1], help='Inlier Classes')
     parser.add_argument('--Split', type=list, default = [0.5, 0.25, 0.25], help = 'Train/Valid/Test Split')
     parser.add_argument('--Lgrad_weight', type=float, default=1, help='Weight for Lgrad')
