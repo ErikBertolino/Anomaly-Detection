@@ -43,6 +43,7 @@ class NeuralNet(nn.Module):
 
 class Flatten(nn.Module):
     def forward(self, input):
+        input = input.contiguous()
         return input.view(input.size(0), -1)
 
 class Encoder(nn.Module):
@@ -91,7 +92,7 @@ class Encoder(nn.Module):
 
         convout = self.en_conv(input)
         z_code = self.en_dense(convout)
-
+        z_code = z_code.contiguous()
         return z_code
 
 class Decoder(nn.Module):

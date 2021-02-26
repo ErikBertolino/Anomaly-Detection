@@ -4,13 +4,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import source.loss_functions as lfs
 import torch.nn.functional as func
+import pickle
 
 from sklearn.decomposition import PCA
 from sklearn.metrics import roc_curve, auc
 from torch.utils.tensorboard import SummaryWriter
 import source.utils as utils
 import tracemalloc
-PACK_PATH = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/.."
+PACK_PATH = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 from datetime import datetime
 from scipy.optimize import brentq
@@ -28,7 +29,7 @@ def folders(folderpath):
         os.makedirs(folderpath)
         os.makedirs(folderpathHist)
         os.makedirs(folderpathBoxplots)
-        os.makedirs(folderpathPCA)
+        os.makedirs( folderpathPCA)
         os.makedirs(folderpathClustering)
         os.makedirs(folderpathWeights)
         os.makedirs(folderpathPlots)
@@ -42,7 +43,8 @@ def HistogramsMSE(Data, labels, folderpath):
         data_hist = Data[indexes]
         label_hist = str(labelclass)
         plt.hist(data_hist, bins=50, alpha=0.5, label=label_hist)
-        
+    
+    
     plt.xlabel("MSE")
     plt.ylabel("Frequency")
     plt.xlim(0, np.amax(Data))
@@ -256,9 +258,9 @@ def roc(labels, scores, folderpath, name):
 
 def training(neuralnet, dataset, epochs, batch_size, Lgrad_weight):
 
+    torch.float32
     
-    torch.autograd.set_detect_anomaly(True)
-    device = torch.device("cpu")
+    device = torch.device("cuda" if (torch.cuda.is_available()) else "cpu")
     print("\nTraining to %d epochs (%d of minibatch size)" %(epochs, batch_size))
 
     make_dir(path="results")
@@ -319,7 +321,6 @@ def training(neuralnet, dataset, epochs, batch_size, Lgrad_weight):
             l_tot, l_enc, l_con, l_adv = \
                 lfs.loss_ganomaly(z_code, z_code_hat, x_tr_torch, x_hat, \
                 dis_x, dis_x_hat, features_real, features_fake)
-
             
             
             x_hat_copy = x_hat.clone()
@@ -331,52 +332,55 @@ def training(neuralnet, dataset, epochs, batch_size, Lgrad_weight):
         
 
             x_tr_copy.requires_grad = True
+            x_tr_copy = x_tr_copy.to(neuralnet.device)
             recon_loss = func.mse_loss(x_tr_copy,x_hat_copy)
            
+          
+            
+          
             #This is for evaluation of gradloss, which is a bit more cumbersome.
             nlayer = 16
             grad_loss = 0
             target_grad = 0
             k = 0
-            for name, param in neuralnet.encoder.named_parameters():
-              if name.endswith('weight'):
-                  
-                  target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
-                  
-                  grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_enc[k].avg.view(-1,1), dim = 0).item()
-                  
-                  k = k + 1
-                  
-              if k == nlayer:
-               # print("Gradloss in encoder is")
-               #print(grad_loss)
-                break
-                  
-            j = 0      
-            for name, param in neuralnet.decoder.named_parameters():
-              if name.endswith('weight'):
-                  
-                  target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
-                  
-                  grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_dec[j].avg.view(-1,1), dim = 0).item()
-                  
-                  j = j + 1
-              if j == nlayer:
-               # print("Gradloss in decoder is")
-               # print(grad_loss)
-                break
-                
-            nlayer = 16
-            grad_loss = grad_loss/nlayer
-            if ref_grad_enc[0].count == 0:
+            
+            
+            
+            if(ref_grad_enc[0].count == 0):
               print("Inside ref_grad count")
               grad_loss = torch.FloatTensor([0.0]).to(device)
             else:
-              grad_loss = grad_loss / nlayer
+                for name, param in neuralnet.encoder.named_parameters():
+                    if name.endswith('weight'):
+                  
+                        target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
+                        target_grad = target_grad.contiguous()
+                        #ref_grad_enc[k].contiguous()
+                        grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_enc[k].avg.view(-1,1), dim = 0).item()
+                        del target_grad
+                        k = k + 1
+                  
+                    if k == nlayer: break
+                # print("Gradloss in encoder is")
+                #print(grad_loss)
+                    
+                  
+                j = 0      
+                for name, param in neuralnet.decoder.named_parameters():
+                    if name.endswith('weight'):
+                  
+                        target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
+                        target_grad = target_grad.contiguous()
+                        grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_dec[j].avg.view(-1,1), dim = 0).item()
+                        del target_grad
+                        j = j + 1
+                    if j == nlayer:  break
+                # print("Gradloss in decoder is")
+                # print(grad_loss)
+               
+                
+                
             
-  
-
-            l_grad = grad_loss
             
             
             l_tot = l_tot + grad_loss
@@ -386,15 +390,15 @@ def training(neuralnet, dataset, epochs, batch_size, Lgrad_weight):
             # Update the reference gradient
             l = 0
             for (name, param) in neuralnet.encoder.named_parameters():
-              if name.endswith('weight'):
-                ref_grad_enc[l].update(param.grad, 1)
-                l = l + 1
+               if name.endswith('weight'):
+                   ref_grad_enc[l].update(param.grad, 1)
+                   l = l + 1
             i = 0
             for (name, param) in neuralnet.decoder.named_parameters():
-              if name.endswith('weight'):
-                ref_grad_dec[i].update(param.grad, 1)
-                i = i + 1
-
+                if name.endswith('weight'):
+                    ref_grad_dec[i].update(param.grad, 1)
+                    i = i + 1
+            
             neuralnet.optimizer.step()
             
             #z_code = torch2npy(z_code)
@@ -422,19 +426,24 @@ def training(neuralnet, dataset, epochs, batch_size, Lgrad_weight):
             print(current/10**6)
             print("Peak was MB")
             print(peak/10**6)
-              
-            list_enc.append(l_enc)
-            list_con.append(l_con)
-            list_adv.append(l_adv)
-            list_tot.append(l_tot)
-            list_grad.append(l_grad)
-
-            writer.add_scalar('GANomaly/restore_error', l_enc, iteration)
-            writer.add_scalar('GANomaly/restore_error', l_con, iteration)
-            writer.add_scalar('GANomaly/kl_divergence', l_adv, iteration)
-            writer.add_scalar('GANomaly/L_grad', grad_loss, iteration)
-            writer.add_scalar('GANomaly/loss_total', l_tot, iteration)
             
+            if(torch.cuda.is_available()):
+                
+                print('Memory Usage:')
+                print('Allocated:', round(torch.cuda.memory_allocated(0)/1024**3,1), 'GB')
+                print('Cached:   ', round(torch.cuda.memory_reserved(0)/1024**3,1), 'GB')
+              
+            list_enc.append(l_enc.item())
+            list_con.append(l_con.item())
+            list_adv.append(l_adv.item())
+            list_tot.append(l_tot.item())
+            list_grad.append(grad_loss)
+            
+            writer.add_scalar('GANomaly/restore_error', l_enc.item(), iteration)
+            writer.add_scalar('GANomaly/restore_error', l_con.item(), iteration)
+            writer.add_scalar('GANomaly/kl_divergence', l_adv.item(), iteration)
+            writer.add_scalar('GANomaly/L_grad', grad_loss, iteration)
+            writer.add_scalar('GANomaly/loss_total', l_tot.item(), iteration)
             
             
             
@@ -454,8 +463,10 @@ def training(neuralnet, dataset, epochs, batch_size, Lgrad_weight):
 
         print("Epoch [%d / %d] (%d iteration)  Enc:%.3f, Con:%.3f, Adv:%.3f, Grad:%3f, Total:%.3f" \
             %(epoch, epochs, iteration, l_enc, l_con, l_adv,grad_loss, l_tot))
-        for idx_m, model in enumerate(neuralnet.models):
-            torch.save(model.state_dict(), PACK_PATH+"/runs/params-%d" %(idx_m))
+        del l_tot, l_con, l_adv, l_enc
+        del x_tr_copy, x_hat_copy, x_hat
+        del z_code, z_code_hat
+            
 
     elapsed_time = time.time() - start_time
     print("Elapsed: "+str(elapsed_time))
@@ -466,6 +477,15 @@ def training(neuralnet, dataset, epochs, batch_size, Lgrad_weight):
     save_graph(contents=list_grad, xlabel="Iteration", ylabel="Adv Error", savename="l_grad")
     save_graph(contents=list_tot, xlabel="Iteration", ylabel="Total Loss", savename="l_tot")
 
+    pickle_out = open(PACK_PATH+"/runs/ref_grad_enc","wb")
+    pickle.dump(ref_grad_enc, pickle_out)
+    pickle_out.close()
+    pickle_out = open(PACK_PATH+"/runs/ref_grad_dec","wb")
+    pickle.dump(ref_grad_dec, pickle_out)
+    pickle_out.close()
+
+
+    
     return ref_grad_enc, ref_grad_dec
 #Validation, meant to curb overfitting
 #The coefficient of interest is the AUC score. 
@@ -538,6 +558,7 @@ def validation(neuralnet, dataset, epochs, batch_size):
         
 
             x_tr_copy.requires_grad = True
+            x_tr_copy = x_tr_copy.to(neuralnet.device)
             recon_loss = func.mse_loss(x_tr_copy,x_hat_copy)
            
             #This is for evaluation of gradloss, which is a bit more cumbersome.
@@ -553,7 +574,8 @@ def validation(neuralnet, dataset, epochs, batch_size):
                   grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_enc[k].avg.view(-1,1), dim = 0).item()
                   
                   k = k + 1
-                  
+                  del target_grad
+                  torch.cuda.empty_cache()
               if k == nlayer:
                # print("Gradloss in encoder is")
                #print(grad_loss)
@@ -568,6 +590,8 @@ def validation(neuralnet, dataset, epochs, batch_size):
                   grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_dec[j].avg.view(-1,1), dim = 0).item()
                   
                   j = j + 1
+                  del target_grad
+                  torch.cuda.empty_cache()
               if j == nlayer:
                # print("Gradloss in decoder is")
                # print(grad_loss)
@@ -611,7 +635,7 @@ def validation(neuralnet, dataset, epochs, batch_size):
 
 
 
-def test( ref_grad_enc, ref_grad_dec, neuralnet, dataset, inlier_classes):
+def test(neuralnet, dataset, inlier_classes):
 
 
     #Preperation stage
@@ -637,8 +661,22 @@ def test( ref_grad_enc, ref_grad_dec, neuralnet, dataset, inlier_classes):
     if(len(param_paths) > 0):
         for idx_p, param_path in enumerate(param_paths):
             print(PACK_PATH+"/runs/params-%d" %(idx_p))
-            neuralnet.models[idx_p].load_state_dict(torch.load(PACK_PATH+"/runs/params-%d" %(idx_p)))
+            neuralnet.models[idx_p].load_state_dict(torch.load(PACK_PATH+"\\runs\params-%d" %(idx_p)))
             neuralnet.models[idx_p].eval()
+
+
+
+
+    pickle_in = open("runs/ref_grad_enc","rb")
+    ref_grad_enc = pickle.load(pickle_in)
+    pickle_in.close()
+    pickle_in = open("runs/ref_grad_dec","rb")
+    ref_grad_dec = pickle.load(pickle_in)
+    pickle_in.close()
+
+
+
+
 
     print("\nTest...")
 
@@ -679,7 +717,7 @@ def test( ref_grad_enc, ref_grad_dec, neuralnet, dataset, inlier_classes):
     target_grad_list_dec = [] #These contains Lgrad weights for the dec
     
     labels = [] #Contains labels for y_te
-        
+    
     while(True):
         x_te, x_te_torch, y_te, y_te_torch, terminator = dataset.next_test(1) # y_te does not used in this prj.
         if(terminator): break
@@ -703,21 +741,26 @@ def test( ref_grad_enc, ref_grad_dec, neuralnet, dataset, inlier_classes):
         
 
         x_te_copy.requires_grad = True
+        
+        x_te_copy = x_te_copy.to(neuralnet.device)
         recon_loss = func.mse_loss(x_te_copy,x_hat_copy)
-        label.append(y_te)
+        label.append(y_te[0])
         scores_enc.append(l_enc.item())
         scores_con.append(l_con.item())
         scores_adv.append(l_adv.item())
+        
         print("Batch iteration is")
         print(batch_iter)
         batch_iter = batch_iter + 1
         
         if(z_code_tot is None):
             z_code_tot = z_code.detach()
+            z_code_tot = z_code_tot.cpu()
             y_te_tot = y_te
         else:
-        
-            z_code_tot = np.append(z_code_tot, z_code.detach(), axis=0)
+            z_code = z_code.detach()
+            z_code = z_code.cpu()
+            z_code_tot = np.append(z_code_tot,z_code, axis=0)
             y_te_tot = np.append(y_te_tot, y_te, axis=0)
 
         
@@ -740,9 +783,11 @@ def test( ref_grad_enc, ref_grad_dec, neuralnet, dataset, inlier_classes):
             if name.endswith('weight'):
                   
                   target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
-                  target_grad_list_enc.append(target_grad)
+#                  target_grad_list_enc.append(target_grad.detach().cpu())
+                  target_grad = target_grad.contiguous()
                   grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_enc[t].avg.view(-1,1), dim = 0).item()
-                  
+                  del target_grad
+                  torch.cuda.empty_cache()
                   t = t + 1
                   
             if t == nlayer: break
@@ -756,8 +801,11 @@ def test( ref_grad_enc, ref_grad_dec, neuralnet, dataset, inlier_classes):
             if name.endswith('weight'):
                   
                 target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
-                target_grad_list_dec.append(target_grad)
+          #      target_grad_list_dec.append(target_grad.detach().cpu())
+                target_grad = target_grad.contiguous()
                 grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_dec[o].avg.view(-1,1), dim = 0).item()
+                del target_grad
+                torch.cuda.empty_cache()
                   
                 o = o + 1
             if o == nlayer: break
@@ -766,13 +814,26 @@ def test( ref_grad_enc, ref_grad_dec, neuralnet, dataset, inlier_classes):
                
                
                 
-            
+        
         grad_loss = grad_loss/nlayer
 
         scores_grad = np.append(scores_grad,grad_loss) 
             
         scores_custom = np.append(scores_custom, (np.asarray(grad_loss*4 + l_con.item())))
 
+        
+        del l_enc, l_con, l_adv
+        del x_hat_copy, x_te_copy, x_te_torch
+        del z_code, x_hat, z_code_hat
+        del dis_x, features_real, dis_x_hat, features_fake, y_te, y_te_torch, recon_loss
+            
+        current, peak = tracemalloc.get_traced_memory()
+
+        print("Current memory usage is MB")
+        print(current/10**6)
+
+
+    
     scores_normal = np.asarray(scores_normal)
     scores_abnormal = np.asarray(scores_abnormal)
     normal_avg, normal_std = np.average(scores_normal), np.std(scores_normal)
@@ -811,7 +872,10 @@ def test( ref_grad_enc, ref_grad_dec, neuralnet, dataset, inlier_classes):
     HistogramsAdv(scores_adv,label,folderpathHist)
     print("Adv Created")
   
-
+   
+    
+    
+    
     target_grad_list_dec = np.array(target_grad_list_dec)
     target_grad_list_enc = np.array(target_grad_list_enc)
     
@@ -836,8 +900,8 @@ def test( ref_grad_enc, ref_grad_dec, neuralnet, dataset, inlier_classes):
     
     scores_grad = np.array(scores_grad)
     scores_custom = np.array(scores_custom)
-    HistogramsCustomAnomaly(scores_grad, labels, folderpathHist)
-    HistogramsCustomAnomaly(scores_custom, labels, folderpathHist)
+    HistogramsCustomAnomaly(scores_grad, label, folderpathHist)
+    HistogramsCustomAnomaly(scores_custom, label, folderpathHist)
     
     
     #########################################################################
@@ -846,12 +910,11 @@ def test( ref_grad_enc, ref_grad_dec, neuralnet, dataset, inlier_classes):
     
     labels_two_classes = []
     
-    for i in labels:
+    for i in label:
         if(i in inlier_classes):
             labels_two_classes.append(0)
         else:
             labels_two_classes.append(1)
-    
     
     
     print("ROC Curves")
