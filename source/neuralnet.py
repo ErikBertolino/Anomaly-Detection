@@ -81,7 +81,7 @@ class Encoder(nn.Module):
 
         self.en_dense = nn.Sequential(
             Flatten(),
-            nn.Linear((self.height//(2**2))*(self.width//(2**2))*self.channel*64, 512),
+            nn.Linear((self.height//(2**2))*(self.width//(2**2))*64, 512),
             nn.BatchNorm1d(512),
             nn.ELU(inplace=False),
             nn.Linear(512, self.z_dim),
@@ -93,6 +93,7 @@ class Encoder(nn.Module):
         convout = self.en_conv(input)
         z_code = self.en_dense(convout)
         z_code = z_code.contiguous()
+        
         return z_code
 
 class Decoder(nn.Module):
@@ -107,8 +108,10 @@ class Decoder(nn.Module):
             nn.Linear(self.z_dim, 512),
             nn.BatchNorm1d(512),
             nn.ELU(),
-            nn.Linear(512, (self.height//(2**2))*(self.width//(2**2))*self.channel*64),
-            nn.BatchNorm1d((self.height//(2**2))*(self.width//(2**2))*self.channel*64),
+  #          nn.Linear(512, (self.height//(2**2))*(self.width//(2**2))*self.channel*64),
+  #          nn.BatchNorm1d((self.height//(2**2))*(self.width//(2**2))*self.channel*64),
+            nn.Linear(512, (self.height//(2**2))*(self.width//(2**2))*64),
+            nn.BatchNorm1d((self.height//(2**2))*(self.width//(2**2))*64),
             nn.ELU(),
         )
 
@@ -139,8 +142,9 @@ class Decoder(nn.Module):
 
     def forward(self, input):
 
-        denseout = self.de_dense(input)
-        denseout_res = denseout.view(denseout.size(0), 64, (self.height//(2**2)), (self.height//(2**2)))
+        denseout = self.de_dense(input)        
+        #denseout_res = denseout.view(denseout.size(0)*self.channel, 64, (self.height//(2**2)), (self.width//(2**2)))
+        denseout_res = denseout.view(denseout.size(0), 64, (self.height//(2**2)), (self.width//(2**2)))
         x_hat = self.de_conv(denseout_res)
         x_hat = torch.clamp(x_hat, min=1e-12, max=1-(1e-12))
 
@@ -191,7 +195,7 @@ class Discriminator(nn.Module):
 
         self.dis_dense = nn.ModuleList([
             Flatten(),
-            nn.Linear((self.height//(2**2))*(self.width//(2**2))*self.channel*64, 512),
+            nn.Linear((self.height//(2**2))*(self.width//(2**2))*64, 512),
             nn.BatchNorm1d(512),
             nn.ELU(),
             nn.Linear(512, 1),

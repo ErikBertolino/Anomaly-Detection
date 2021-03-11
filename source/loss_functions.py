@@ -1,20 +1,58 @@
 import torch
 
+#Nota bene: In training, the average of losses in each batch is returned. 
+#In testing, this is not the case.
 
-def loss_enc(z_code, z_code_hat):
-
-    l_enc = torch.sum((z_code - z_code_hat)**2, dim=(1))
+def loss_enc(z_code, z_code_hat, test):
+    
+    if(test):
+        l_enc = torch.sum((z_code - z_code_hat)**2, dim=(1))
+    else:     
+        l_enc = torch.sum((z_code - z_code_hat)**2, dim=(1))
 
     return l_enc
 
-def loss_rec(x, x_hat):
+#def loss_enc(z_code, z_code_hat, test):
 
-    l_con = torch.sum(torch.abs(x - x_hat), dim=(1, 2, 3))
+ #   if test:     
 
+ #       l_enc = torch.sum((z_code - z_code_hat)**2, dim=(1))
+
+#    return l_enc
+
+#def loss_rec(x, x_hat, test):
+
+#    if test :    
+
+#    else:
+
+ #       l_con = torch.sum(torch.abs(x - x_hat), dim=(1, 2, 3))
+
+#    return l_con
+
+
+
+def loss_rec(x,x_hat,test):
+    
+    if test == True:
+        l_con = torch.sum(torch.abs(x - x_hat), dim=(1, 2, 3))
+    else:
+        
+        l_con = torch.sum(torch.abs(x - x_hat), dim=(1, 2, 3))
+        
+        
+        
     return l_con
 
-def loss_adv(dis_x, dis_x_hat, features_real, features_fake):
 
+
+
+
+
+
+
+def loss_adv(dis_x, dis_x_hat, features_real, features_fake, test):
+    
     l_adv = torch.sum((dis_x - dis_x_hat)**2, dim=(1))
 
     for fidx, _ in enumerate(features_real):
@@ -31,6 +69,7 @@ def loss_adv(dis_x, dis_x_hat, features_real, features_fake):
 
     return l_adv
 
+
 def loss_grad(grad_loss):
     l_grad = grad_loss
     #for i in range(nlayer):
@@ -44,7 +83,7 @@ def loss_grad(grad_loss):
 
 def loss_ganomaly(z_code, z_code_hat, x, x_hat, \
     dis_x, dis_x_hat, features_real, features_fake, \
-    w_enc=1, w_con=50, w_adv=1, w_grad = 1):
+    w_grad, w_enc, w_adv, w_con, test):
 
     z_code, z_code_hat, x, x_hat, dis_x, dis_x_hat = \
         z_code.cpu(), z_code_hat.cpu(), x.cpu(), x_hat.cpu(), dis_x.cpu(), dis_x_hat.cpu()
@@ -53,15 +92,18 @@ def loss_ganomaly(z_code, z_code_hat, x, x_hat, \
         features_real[fidx] = features_real[fidx].cpu()
         features_fake[fidx] = features_fake[fidx].cpu()
 
-    l_enc = loss_enc(z_code, z_code_hat)
-    l_con = loss_rec(x, x_hat)
-    l_adv = loss_adv(dis_x, dis_x_hat, features_real, features_fake)
+    l_enc = loss_enc(z_code, z_code_hat,test)
+    l_con = loss_rec(x, x_hat,test)
+    l_adv = loss_adv(dis_x, dis_x_hat, features_real, features_fake,test)
     
 
-    l_tot = torch.mean((w_enc * l_enc) + (w_con * l_con) + (w_adv * l_adv))
-
-    l_enc = torch.mean(l_enc)
-    l_con = torch.mean(l_con)
-    l_adv = torch.mean(l_adv)
+    if(test):
+        l_tot = (w_enc * l_enc) + (w_con * l_con) + (w_adv * l_adv)
+    else:
+        l_tot = torch.mean((w_enc * l_enc) + (w_con * l_con) + (w_adv * l_adv))
+        l_enc = torch.mean(l_enc)
+        l_con = torch.mean(l_con)
+        l_adv = torch.mean(l_adv)
+    
 
     return l_tot, l_enc, l_con, l_adv

@@ -2,6 +2,8 @@ import torch
 import numpy as np
 import tensorflow as tf
 
+import torchvision.transforms as transforms
+
 from sklearn.utils import shuffle
 
 class Dataset(object):
@@ -64,17 +66,20 @@ class Dataset(object):
 
     def split_dataset(self, inlier_classes, size, data):
         
-        #Size is used to denote the size of the inlier class. 
-        #The amount of outliers is size/2, so the total size of the dataset is then
-        #size + size/2
+        #Train - contains solely inliers
         
-        #data is used to denote which type of dataset.
+        #Valid - contains solely inliers, different from Train
+        
+        #Test - contrains inliers and outliers. Inliers different from Train and Valid.
+        
         size = int(size)
         x_tot = np.append(self.x_tr, self.x_te, axis=0)
         y_tot = np.append(self.y_tr, self.y_te, axis=0)
         
         print("Inlier classes are:")
         print(*inlier_classes)
+        print("Splitting dataset")
+    
         
         x_normal, y_normal = None, None
         x_abnormal, y_abnormal = None, None
@@ -82,6 +87,7 @@ class Dataset(object):
         for yidx, y in enumerate(y_tot):
             
             if(k > 4*size and l > 4*size): break
+            
             x_tmp = np.expand_dims(x_tot[yidx], axis=0)
             y_tmp = np.expand_dims(y_tot[yidx], axis=0)
 
@@ -110,7 +116,9 @@ class Dataset(object):
           #      if((x_normal.shape[0] >= 2*size) and x_abnormal.shape[0] >= 2*size+1 ): break
 
         self.x_tr, self.y_tr = x_normal[:2*size], y_normal[:2*size]
-        self.x_te, self.y_te = x_normal[2*size:], y_normal[2*size:]
+        
+        self.x_vd, self.y_vd = x_normal[2*size:3*size], y_normal[2*size:3*size]
+        self.x_te, self.y_te = x_normal[3*size:4*size], y_normal[3*size:4*size]
         
         #Some classes are picked out at random for use in the validation stage
         #These classes will reappear in the testing stage, but it will be new
@@ -119,34 +127,36 @@ class Dataset(object):
         print(len(x_abnormal))
         print(len(x_normal))
         classes = np.unique([y_abnormal])
-        length = len(classes)
-        rndm = np.random.permutation(classes)
+        #length = len(classes)
+        #rndm = np.random.permutation(classes)
         
-        h = int(round(length/2))
+       # h = int(round(length/2))
         
-        rndm = rndm[h:]
+        #rndm = rndm[h:]
         
         print("Outlier classes used in validation : " )
-        print(rndm)
+        #print(rndm)
         
         IndexList = np.asarray([])
-        for label in rndm:
-            indexes = np.where(self.y_te==label)
+        for label in classes:
+            indexes = np.where(y_abnormal==label)
             indexes = np.asarray(indexes)
             indexes = indexes.astype(int)
             IndexList = np.append(IndexList,indexes)
             
             
         IndexList = IndexList.astype(int)
-        self.x_vd = x_abnormal[IndexList]
-        self.y_vd = y_abnormal[IndexList]
+        #self.x_vd = x_abnormal[IndexList]
+        #self.y_vd = y_abnormal[IndexList]
         
-        v=np.array([range(1,2*size)])
-        v = np.delete(v,IndexList)
+       # v=np.array([range(1,2*size)])
+       # v = np.delete(v,IndexList)
         
-        self.x_te = np.append(self.x_te, x_abnormal[v], axis = 0) #Adding abnormal 
-        self.y_te = np.append(self.y_te, y_abnormal[v], axis = 0)
+        self.x_te = np.append(self.x_te, x_abnormal[IndexList], axis = 0) #Adding abnormal 
+        self.y_te = np.append(self.y_te, y_abnormal[IndexList], axis = 0)
 
+
+    #TODO: Remake such that the validation set only contains inlier images - every datapoint should belong to only one set in the split.
         
     def reset_idx(self): self.idx_tr, self.idx_te = 0, 0
 
@@ -172,9 +182,13 @@ class Dataset(object):
         if(self.normalize):
             min_x, max_x = x_tr.min(), x_tr.max()
             x_tr = (x_tr - min_x) / (max_x - min_x)
-
-        x_tr_torch = torch.from_numpy(np.transpose(x_tr, (0, 3, 1, 2)))
-        y_tr_torch = torch.from_numpy(y_tr)
+            
+        if(len(x_tr.shape) == 5):
+            x_tr_torch = torch.from_numpy(np.transpose(x_tr, (0, 1, 2, 4, 3)))
+            y_tr_torch = torch.from_numpy(y_tr)
+        if(len(x_tr.shape) == 4):
+            x_tr_torch = torch.from_numpy(np.transpose(x_tr, (0, 3, 1, 2)))
+            y_tr_torch = torch.from_numpy(y_tr)
 
         return x_tr, x_tr_torch, y_tr, y_tr_torch, terminator
     
@@ -220,8 +234,14 @@ class Dataset(object):
         if(self.normalize):
             min_x, max_x = x_te.min(), x_te.max()
             x_te = (x_te - min_x) / (max_x - min_x)
+            
+        if(len(x_te.shape) == 5):
+            x_te_torch = torch.from_numpy(np.transpose(x_te, (0, 1, 2, 4, 3)))
+            y_te_torch = torch.from_numpy(y_te)
+        
 
-        x_te_torch = torch.from_numpy(np.transpose(x_te, (0, 3, 1, 2)))
-        y_te_torch = torch.from_numpy(y_te)
-
+        if(len(x_te.shape) == 4):
+            x_te_torch = torch.from_numpy(np.transpose(x_te, (0, 3, 1, 2)))
+            y_te_torch = torch.from_numpy(y_te)
+            
         return x_te, x_te_torch, y_te, y_te_torch, terminator
