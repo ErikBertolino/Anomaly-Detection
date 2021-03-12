@@ -83,78 +83,78 @@ class Dataset(object):
         
         x_normal, y_normal = None, None
         x_abnormal, y_abnormal = None, None
-        k, l = 0, 0
-        for yidx, y in enumerate(y_tot):
+        
+        indexListNormal = []
+        for label in inlier_classes:
+            indexes = np.where(y_tot==label)
+            indexes = np.asarray(indexes)
+            indexes = indexes.astype(int)
+            indexListNormal = np.append(indexListNormal,indexes)
+        
+        indexListNormal = np.unique([indexListNormal])
+        indexListNormal = indexListNormal.astype(int)    
+        x_normal, y_normal = x_tot[indexListNormal], y_tot[indexListNormal]
+        
+        self.x_tr, self.y_tr = x_normal[:size], y_normal[:size]
+        
+        self.x_vd, self.y_vd = x_normal[2*size:3*size], y_normal[2*size:3*size]
+        
+        
+        
+        classes = np.unique([y_tot])
+                
+        #print(rndm)
+        indexListAbnormal = []
+        
+        for label in classes:
+            indexes = np.where(y_tot==label)
+            indexes = np.asarray(indexes)
+            indexes = indexes.astype(int)
+            indexListAbnormal = np.append(indexListAbnormal,indexes)
             
-            if(k > 4*size and l > 4*size): break
+        indexListNormal = np.unique([indexListNormal])
+        indexListAbnormal = indexListAbnormal.astype(int)   
+        
+        x_abnormal, y_abnormal = x_tot[indexListAbnormal], y_tot[indexListAbnormal]
+        self.x_te, self.y_te = x_normal[3*size:4*size], y_normal[3*size:4*size]
+        
+       
+        
+        self.x_te = np.append(self.x_te, x_abnormal[:2*size], axis = 0) #Adding abnormal 
+        self.y_te = np.append(self.y_te, y_abnormal[:2*size], axis = 0)
+
+        # k, l = 0, 0
+        # for yidx, y in enumerate(y_tot):
             
-            x_tmp = np.expand_dims(x_tot[yidx], axis=0)
-            y_tmp = np.expand_dims(y_tot[yidx], axis=0)
+        #     if(k > 4*size and l > 4*size): break
+            
+        #     x_tmp = np.expand_dims(x_tot[yidx], axis=0)
+        #     y_tmp = np.expand_dims(y_tot[yidx], axis=0)
 
-            if(y in inlier_classes): # as normal
-                if(x_normal is None):
-                    x_normal = x_tmp
-                    y_normal = y_tmp
-                else:
-                    if(x_normal.shape[0] < 4*size):
-                        k = k + 1
-                        x_normal = np.append(x_normal, x_tmp, axis=0)
-                        y_normal = np.append(y_normal, y_tmp, axis=0)
+        #     if(y in inlier_classes): # as normal
+        #         if(x_normal is None):
+        #             x_normal = x_tmp
+        #             y_normal = y_tmp
+        #         else:
+        #             k = k + 1
+        #             x_normal = np.append(x_normal, x_tmp, axis=0)
+        #             y_normal = np.append(y_normal, y_tmp, axis=0)
 
-            else: # as abnormal
-                if(x_abnormal is None):
-                    x_abnormal = x_tmp
-                    y_abnormal = y_tmp
-                else:
-                    if(x_abnormal.shape[0] < 4*size):
-                        l = l + 1
-                        x_abnormal = np.append(x_abnormal, x_tmp, axis=0)
-                        y_abnormal = np.append(y_abnormal, y_tmp, axis=0)
+        #     else: # as abnormal
+        #         if(x_abnormal is None):
+        #             x_abnormal = x_tmp
+        #             y_abnormal = y_tmp
+        #         else:
+        #             l = l + 1
+        #             x_abnormal = np.append(x_abnormal, x_tmp, axis=0)
+        #             y_abnormal = np.append(y_abnormal, y_tmp, axis=0)
                         
                         
            # if(not(x_normal is None) and not(x_abnormal is None)):
           #      if((x_normal.shape[0] >= 2*size) and x_abnormal.shape[0] >= 2*size+1 ): break
 
-        self.x_tr, self.y_tr = x_normal[:2*size], y_normal[:2*size]
-        
-        self.x_vd, self.y_vd = x_normal[2*size:3*size], y_normal[2*size:3*size]
-        self.x_te, self.y_te = x_normal[3*size:4*size], y_normal[3*size:4*size]
-        
-        #Some classes are picked out at random for use in the validation stage
-        #These classes will reappear in the testing stage, but it will be new
-        #data instances
-        
-        print(len(x_abnormal))
-        print(len(x_normal))
-        classes = np.unique([y_abnormal])
-        #length = len(classes)
-        #rndm = np.random.permutation(classes)
-        
-       # h = int(round(length/2))
-        
-        #rndm = rndm[h:]
-        
-        print("Outlier classes used in validation : " )
-        #print(rndm)
-        
-        IndexList = np.asarray([])
-        for label in classes:
-            indexes = np.where(y_abnormal==label)
-            indexes = np.asarray(indexes)
-            indexes = indexes.astype(int)
-            IndexList = np.append(IndexList,indexes)
-            
-            
-        IndexList = IndexList.astype(int)
-        #self.x_vd = x_abnormal[IndexList]
-        #self.y_vd = y_abnormal[IndexList]
-        
-       # v=np.array([range(1,2*size)])
-       # v = np.delete(v,IndexList)
-        
-        self.x_te = np.append(self.x_te, x_abnormal[IndexList], axis = 0) #Adding abnormal 
-        self.y_te = np.append(self.y_te, y_abnormal[IndexList], axis = 0)
-
+       
+ 
 
     #TODO: Remake such that the validation set only contains inlier images - every datapoint should belong to only one set in the split.
         

@@ -696,7 +696,7 @@ def validation(neuralnet, dataset, size, Lgrad_weight, Enc_weight, Adv_weight, C
 
 
 
-def test(folderpath,  paths, neuralnet, dataset, inlier_classes, Lgrad_weight, Enc_weight, Adv_weight, Con_weight):
+def test(folderpath,  paths, neuralnet, dataset, inlier_classes, size, Lgrad_weight, Enc_weight, Adv_weight, Con_weight):
 
 
     #Preperation stage
@@ -742,6 +742,8 @@ def test(folderpath,  paths, neuralnet, dataset, inlier_classes, Lgrad_weight, E
 
 
     print("\nTest...")
+    
+    epochs = int(np.floor(3*size/2))
 
     
     
@@ -781,12 +783,9 @@ def test(folderpath,  paths, neuralnet, dataset, inlier_classes, Lgrad_weight, E
     
    # labels = [] #Contains labels for y_te
     
-    while(True):
-        x_te, x_te_torch, y_te, y_te_torch, terminator = dataset.next_test(2) # y_te does not used in this prj.
+    for epoch in range(epochs):
+        x_te, x_te_torch, y_te, y_te_torch, terminator = dataset.next_test(32) # y_te does not used in this prj.
         
-        if(terminator): break
-    
-    
         if(len(x_te.shape) == 5):
             x_te = x_te.reshape(2,32,32,3)
             x_te_torch = x_te_torch.reshape(2,32,32,3)
@@ -813,11 +812,13 @@ def test(folderpath,  paths, neuralnet, dataset, inlier_classes, Lgrad_weight, E
         x_te_copy.requires_grad = True
         
         x_te_copy = x_te_copy.to(neuralnet.device)
-        recon_loss = func.mse_loss(x_te_copy[0],x_hat_copy[0])
         
         
-        label.append(y_te[0])
-        label.append(y_te[1])
+        l = len(y_te)
+        for k in range(l):
+            label.append(y_te[k])
+            
+        
         
         scores_enc.append(l_enc.detach().numpy())
         scores_con.append(l_con.detach().numpy())
@@ -841,70 +842,72 @@ def test(folderpath,  paths, neuralnet, dataset, inlier_classes, Lgrad_weight, E
 
         
 
+        #for loop here
+        for k in range(l):
+            
+            if(y_te[k] in inlier_classes): 
+                scores_normal= np.append(scores_normal, l_tot.detach().numpy()[k]) #This has to be edited, should be able to take a whole list of inlier classes!            
+            else:
+                scores_abnormal = np.append(scores_abnormal, l_tot.detach().numpy()[0])
         
-        if(y_te[0] in inlier_classes): 
-            scores_normal= np.append(scores_normal, l_tot.detach().numpy()[0]) #This has to be edited, should be able to take a whole list of inlier classes!
+        #if(y_te[1] in inlier_classes): 
+         #   scores_normal= np.append(scores_normal, l_tot.detach().numpy()[1]) #This has to be edited, should be able to take a whole list of inlier classes!
         
-        else:
-            scores_abnormal = np.append(scores_abnormal, l_tot.detach().numpy()[0])
+       # else:
+       #     scores_abnormal = np.append(scores_abnormal, l_tot.detach().numpy()[1])
         
-        if(y_te[1] in inlier_classes): 
-            scores_normal= np.append(scores_normal, l_tot.detach().numpy()[1]) #This has to be edited, should be able to take a whole list of inlier classes!
-        
-        else:
-            scores_abnormal = np.append(scores_abnormal, l_tot.detach().numpy()[1])
-        
-    
-        nlayer = 16
-        grad_loss = 0
-        target_grad = 0
+        #for loop here
+        #move recon_loss here, taking each slice each iteration
+        for k in range(l):                        
+            recon_loss = func.mse_loss(x_te_copy[k],x_hat_copy[k])
+            nlayer = 16
+            grad_loss = 0
+            target_grad = 0
         #This is for the first data point!
-        t = 0
-        for name, param in neuralnet.encoder.named_parameters():
-            if name.endswith('weight'):
-                  
-                  target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
-#                  target_grad_list_enc.append(target_grad.detach().cpu())
-                  target_grad = target_grad.contiguous()
-                  grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_enc[t].avg.view(-1,1), dim = 0).item()
-                  del target_grad
-                  torch.cuda.empty_cache()
-                  t = t + 1
-                  
-            if t == nlayer: break
+            t = 0
+            for name, param in neuralnet.encoder.named_parameters():
+                if name.endswith('weight'):
+                    target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
+#                   target_grad_list_enc.append(target_grad.detach().cpu())
+                    target_grad = target_grad.contiguous()
+                    grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_enc[t].avg.view(-1,1), dim = 0).item()
+                    del target_grad
+                    torch.cuda.empty_cache()
+                    t = t + 1                  
+                if t == nlayer: break
                # print("Gradloss in encoder is")
                # print(grad_loss)
-                
-        grad_loss = grad_loss/nlayer
+            grad_loss = grad_loss/nlayer
 
-        scores_grad = np.append(scores_grad,grad_loss)      
+            scores_grad = np.append(scores_grad,grad_loss)      
+        
         
         
         #This for the second data point!
-        recon_loss = func.mse_loss(x_te_copy[1],x_hat_copy[1])
+      #recon_loss = func.mse_loss(x_te_copy[1],x_hat_copy[1])
         
-        grad_loss = 0
-        target_grad = 0
+     #   grad_loss = 0
+     #   target_grad = 0
             
-        t = 0
-        for name, param in neuralnet.encoder.named_parameters():
-            if name.endswith('weight'):
+    #    t = 0
+    #    for name, param in neuralnet.encoder.named_parameters():
+    #        if name.endswith('weight'):
                   
-                  target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
+    #              target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
 #                  target_grad_list_enc.append(target_grad.detach().cpu())
-                  target_grad = target_grad.contiguous()
-                  grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_enc[t].avg.view(-1,1), dim = 0).item()
-                  del target_grad
-                  torch.cuda.empty_cache()
-                  t = t + 1
+     #             target_grad = target_grad.contiguous()
+     #             grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_enc[t].avg.view(-1,1), dim = 0).item()
+     #             del target_grad
+     #             torch.cuda.empty_cache()
+     #             t = t + 1
                   
-            if t == nlayer: break
+     #       if t == nlayer: break
                # print("Gradloss in encoder is")
                # print(grad_loss)
                 
-        grad_loss = grad_loss/nlayer
+     #   grad_loss = grad_loss/nlayer
 
-        scores_grad = np.append(scores_grad,grad_loss)      
+    #    scores_grad = np.append(scores_grad,grad_loss)      
                   
        # o = 0      
        # for name, param in neuralnet.decoder.named_parameters():
