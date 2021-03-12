@@ -212,10 +212,14 @@ class Dataset(object):
         if(self.normalize):
             min_x, max_x = x_vd.min(), x_vd.max()
             x_vd = (x_vd - min_x) / (max_x - min_x)
+            
+        if(len(x_vd.shape) == 5):
+            x_vd_torch = torch.from_numpy(np.transpose(x_vd, (0, 1, 2, 4, 3)))
+            y_vd_torch = torch.from_numpy(y_vd)
 
-        
-        x_vd_torch = torch.from_numpy(np.transpose(x_vd, (0, 3, 1, 2)))
-        y_vd_torch = torch.from_numpy(y_vd)
+        if(len(x_vd.shape) == 4):
+            x_vd_torch = torch.from_numpy(np.transpose(x_vd, (0, 3, 1, 2)))
+            y_vd_torch = torch.from_numpy(y_vd)
 
         return x_vd, x_vd_torch, y_vd, y_vd_torch, terminator
 

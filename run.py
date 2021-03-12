@@ -72,7 +72,7 @@ def main():
         device=device, ngpu=FLAGS.ngpu, \
         ksize=FLAGS.ksize, z_dim=FLAGS.z_dim, learning_rate=FLAGS.lr)
     #Training
-    ref_grad_enc, ref_grad_dec = solver.training(folderpath, neuralnet=neuralnet, dataset=dataset, epochs=FLAGS.epoch, batch_size=FLAGS.batch, Lgrad_weight=FLAGS.Lgrad_weight, \
+    solver.training(folderpath, neuralnet=neuralnet, dataset=dataset, epochs=FLAGS.epoch, batch_size=FLAGS.batch, size=FLAGS.Outlier_size, Lgrad_weight=FLAGS.Lgrad_weight, \
     Enc_weight=FLAGS.Enc_weight, Adv_weight=FLAGS.Adv_weight, Con_weight=FLAGS.Con_weight)
     #Validation
     #solver.validation(neuralnet=neuralnet, dataset=dataset, split=FLAGS.Split)
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     parser.add_argument('--ksize', type=int, default=3, help='kernel size for constructing Neural Network')
     parser.add_argument('--z_dim', type=int, default=128, help='Dimension of latent vector')
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate for training')
-    parser.add_argument('--epoch', type=int, default=2, help='Training epoch')
+    parser.add_argument('--epoch', type=int, default=100, help='Training epoch')
     parser.add_argument('--batch', type=int, default=32, help='Mini batch size')
     parser.add_argument('--Inlier_Classes', type=int, default=[1], help='Inlier Classes')
     parser.add_argument('--Split', type=list, default = [0.5, 0.25, 0.25], help = 'Train/Valid/Test Split')

@@ -305,16 +305,12 @@ def roc(labels, scores, folderpath, name):
 
 
 
-def training(folderpath, neuralnet, dataset, epochs, batch_size, Lgrad_weight,  Enc_weight, Adv_weight, Con_weight):
+def training(folderpath, neuralnet, dataset, epochs, batch_size,size, Lgrad_weight,  Enc_weight, Adv_weight, Con_weight):
 
     torch.float32
     
     device = torch.device("cuda" if (torch.cuda.is_available()) else "cpu")
     print("\nTraining to %d epochs (%d of minibatch size)" %(epochs, batch_size))
-
-    make_dir(path="results")
-    result_list = ["tr_latent", "tr_resotring"]
-    for result_name in result_list: make_dir(path=os.path.join("results", result_name))
 
     start_time = time.time()
 
@@ -340,7 +336,7 @@ def training(folderpath, neuralnet, dataset, epochs, batch_size, Lgrad_weight,  
    #         layer_grad.avg = torch.zeros_like(param)
    #         ref_grad_dec.append(layer_grad)
     AUC = 0
-    
+    validation_error = 0
     for epoch in range(epochs):
 
         x_tr, x_tr_torch, y_tr, y_tr_torch, _ = dataset.next_train(batch_size=test_size, fix=True) # Initial batch
@@ -362,7 +358,7 @@ def training(folderpath, neuralnet, dataset, epochs, batch_size, Lgrad_weight,  
 
      
         batch_iter = 0
-        while(batch_iter < 33):
+        while(batch_iter < 32):
             batch_iter = batch_iter + 1
            
             x_tr, x_tr_torch, y_tr, y_tr_torch, terminator = dataset.next_train(batch_size)
@@ -514,19 +510,20 @@ def training(folderpath, neuralnet, dataset, epochs, batch_size, Lgrad_weight,  
             
             
             
-            if(epoch % 100 == 0 and epoch > 100):
+            if(epoch % 10 == 0 and epoch > 1):
                 
                 
-                AUC_new = validation(neuralnet, dataset)
+                AUC_new, validation_error_new = validation(neuralnet, dataset,size, Lgrad_weight, Enc_weight, Adv_weight, Con_weight)
                 
                 
-                if(AUC_new < AUC): #This indicates overfitting. It performs worse on the test-set
+                if(validation_error_new < validation_error and validation_error != 0): #This indicates overfitting. It performs worse on the test-set
+                    print("Validation error is increasing - indicating overfitting. Cancelling training.")
                     break
                 else:
-                    AUC = AUC_new
+                    validation_error = validation_error_new
                 
                 
-            
+        
 
         print("Epoch [%d / %d] (%d iteration)  Enc:%.3f, Con:%.3f, Adv:%.3f, Grad:%3f, Total:%.3f" \
             %(epoch, epochs, iteration, l_enc, l_con, l_adv,grad_loss, l_tot))
@@ -542,7 +539,7 @@ def training(folderpath, neuralnet, dataset, epochs, batch_size, Lgrad_weight,  
     save_graph(folderpath,contents=list_con, xlabel="Iteration", ylabel="Con Error", savename="l_con" )
     save_graph(folderpath,contents=list_adv, xlabel="Iteration", ylabel="Adv Error", savename="l_adv")
     save_graph(folderpath,contents=list_grad, xlabel="Iteration", ylabel="Adv Error", savename="l_grad")
-    save_graph( folderpath,contents=list_tot, xlabel="Iteration", ylabel="Total Loss", savename="l_tot")
+    save_graph(folderpath,contents=list_tot, xlabel="Iteration", ylabel="Total Loss", savename="l_tot")
 
     pickle_out = open(folderpath+"\\ref_grad_enc","wb")
     pickle.dump(ref_grad_enc, pickle_out)
@@ -557,100 +554,89 @@ def training(folderpath, neuralnet, dataset, epochs, batch_size, Lgrad_weight,  
     
 
     
-    return ref_grad_enc, ref_grad_dec
+    return ref_grad_enc
 #Validation, meant to curb overfitting
 #The coefficient of interest is the AUC score. 
 
 
 
 
-def validation(neuralnet, dataset, epochs, batch_size):
+def validation(neuralnet, dataset, size, Lgrad_weight, Enc_weight, Adv_weight, Con_weight):
     
     print("Validating ...")
     
     device = torch.device("cuda" if (torch.cuda.is_available()) else "cpu")
-    test_sq = 20
-    test_size = test_sq**2
     
-    iteration = 0
-    ref_grad_enc = []
-   # ref_grad_dec = []
+    test_size = 32
+    epochs = int(np.floor(size/test_size))
+   
+    
+   
     
     AUC = 0
-    for name, param in neuralnet.encoder.named_parameters():
-        if name.endswith('weight'):
-            layer_grad = utils.AverageMeter()
-            layer_grad.avg = torch.zeros_like(param)
-            ref_grad_enc.append(layer_grad)
-    #for name, param in neuralnet.decoder.named_parameters():
-   #     if name.endswith('weight'):
-   #         layer_grad = utils.AverageMeter()
-   #         layer_grad.avg = torch.zeros_like(param)
-    #        ref_grad_dec.append(layer_grad)
+    validation_error = 0
+    
+    
+    
     
     for epoch in range(epochs):
 
-        x_tr, x_tr_torch, y_tr, y_tr_torch, _ = dataset.next_validate(batch_size=test_size, fix=True) # Initial batch
+        x_vd, x_vd_torch, y_vd, y_vd_torch, _ = dataset.next_validate(batch_size=test_size) 
         
-        z_code = neuralnet.encoder(x_tr_torch.to(neuralnet.device))
+        if(len(x_vd.shape) == 5):
+            x_vd_torch = torch.squeeze(x_vd_torch)
+            x_vd_torch = x_vd_torch.permute(0,3,2,1)
+            
+        z_code = neuralnet.encoder(x_vd_torch.to(neuralnet.device))
         x_hat = neuralnet.decoder(z_code.to(neuralnet.device))
         z_code_hat = neuralnet.encoder(x_hat.to(neuralnet.device))
         
          
-        dis_x, features_real = neuralnet.discriminator(x_tr_torch.to(neuralnet.device))
+        dis_x, features_real = neuralnet.discriminator(x_vd_torch.to(neuralnet.device))
         dis_x_hat, features_fake = neuralnet.discriminator(x_hat.to(neuralnet.device))
 
-    
-        batch_iter = 0
-        while(True):
-            batch_iter = batch_iter + 1
-           
-            x_tr, x_tr_torch, y_tr, y_tr_torch, terminator = dataset.next_validate(batch_size)
 
-            z_code = neuralnet.encoder(x_tr_torch.to(neuralnet.device))
-            x_hat = neuralnet.decoder(z_code.to(neuralnet.device))
-            z_code_hat = neuralnet.encoder(x_hat.to(neuralnet.device))
-
-            dis_x, features_real = neuralnet.discriminator(x_tr_torch.to(neuralnet.device))
-            dis_x_hat, features_fake = neuralnet.discriminator(x_hat.to(neuralnet.device))
-
-            l_tot, l_enc, l_con, l_adv = \
-                lfs.loss_ganomaly(z_code, z_code_hat, x_tr_torch, x_hat, \
-                dis_x, dis_x_hat, features_real, features_fake)
+        l_tot, l_enc, l_con, l_adv = \
+          lfs.loss_ganomaly(z_code, z_code_hat, x_vd_torch, x_hat, \
+          dis_x, dis_x_hat, features_real, features_fake, Lgrad_weight, Enc_weight, Adv_weight, Con_weight, False)
 
             
-            
-            x_hat_copy = x_hat.clone()
-            x_hat_copy = x_hat_copy.permute(0,2,3,1)
+        validation_error = validation_error + l_tot.item()
+        
+        
+            #x_hat_copy = x_hat.clone()
+          #  x_hat_copy = x_hat_copy.permute(0,2,3,1)
            # x_tr_copy = x_tr.clone().detach()
            # x_tr_copy.requires_grad_()
-            x_tr_copy = torch.from_numpy(x_tr)
+         #   x_vd_copy = torch.from_numpy(x_vd)
       
         
 
-            x_tr_copy.requires_grad = True
-            x_tr_copy = x_tr_copy.to(neuralnet.device)
-            recon_loss = func.mse_loss(x_tr_copy,x_hat_copy)
+           # x_vd_copy.requires_grad = True
+          #  x_vd_copy = x_vd_copy.to(neuralnet.device)
+          #  recon_loss = func.mse_loss(x_vd_copy,x_hat_copy)
+            
+            
            
             #This is for evaluation of gradloss, which is a bit more cumbersome.
-            nlayer = 16
-            grad_loss = 0
-            target_grad = 0
-            k = 0
-            for name, param in neuralnet.encoder.named_parameters():
-              if name.endswith('weight'):
+            #nlayer = 16
+            #grad_loss = 0
+            #target_grad = 0
+            #k = 0
+            #for name, param in neuralnet.encoder.named_parameters():
+            #  if name.endswith('weight'):
                   
-                  target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
+            #      target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
                   
-                  grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_enc[k].avg.view(-1,1), dim = 0).item()
+            #      grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_enc[k].avg.view(-1,1), dim = 0).item()
                   
-                  k = k + 1
-                  del target_grad
-                  torch.cuda.empty_cache()
-              if k == nlayer:
+           #       k = k + 1
+            #      del target_grad
+            #      torch.cuda.empty_cache()
+            #  if k == nlayer:
                # print("Gradloss in encoder is")
                #print(grad_loss)
-                break
+             #   break
                   
           #  j = 0      
          #   for name, param in neuralnet.decoder.named_parameters():
@@ -668,13 +654,13 @@ def validation(neuralnet, dataset, epochs, batch_size):
                # print(grad_loss)
         #        break
                 
-            nlayer = 16
-            grad_loss = grad_loss/nlayer
-            if ref_grad_enc[0].count == 0:
-              print("Inside ref_grad count")
-              grad_loss = torch.FloatTensor([0.0]).to(device)
-            else:
-              grad_loss = grad_loss / nlayer
+          #  nlayer = 16
+          #  grad_loss = grad_loss/nlayer
+          #  if ref_grad_enc[0].count == 0:
+           #   print("Inside ref_grad count")
+           #   grad_loss = torch.FloatTensor([0.0]).to(device)
+           ## else:
+           #   grad_loss = grad_loss / nlayer
             
   
 
@@ -683,11 +669,11 @@ def validation(neuralnet, dataset, epochs, batch_size):
             #l_tot.backward(retain_graph = True)
            # l_tot.backward()
             # Update the reference gradient
-            l = 0
-            for (name, param) in neuralnet.encoder.named_parameters():
-              if name.endswith('weight'):
-                ref_grad_enc[l].update(param.grad, 1)
-                l = l + 1
+            #l = 0
+            #for (name, param) in neuralnet.encoder.named_parameters():
+            #  if name.endswith('weight'):
+            #    ref_grad_enc[l].update(param.grad, 1)
+            #    l = l + 1
         #    i = 0
         #    for (name, param) in neuralnet.decoder.named_parameters():
         #      if name.endswith('weight'):
@@ -697,14 +683,15 @@ def validation(neuralnet, dataset, epochs, batch_size):
 
             #Evaluation stage
             
+          
             
-            iteration += 1
-            if(terminator): break
-        
+            
+            
+            
         
         
 
-    return AUC
+    return AUC, validation_error
 
 
 
