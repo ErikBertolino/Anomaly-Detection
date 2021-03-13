@@ -829,6 +829,8 @@ def test(folderpath,  paths, neuralnet, dataset, inlier_classes, size, Lgrad_wei
         print("Batch iteration is")
         print(batch_iter)
         batch_iter = batch_iter + 1
+        print(batch_iter/epochs)
+        print("Completed")
         
         if(z_code_tot is None):
             z_code_tot = z_code.detach()
