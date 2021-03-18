@@ -1,10 +1,9 @@
 import os, argparse
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
-import time
+
 from datetime import datetime
 import torch
-from torchsummary import summary
-import tracemalloc
+
 import source.neuralnet as nn
 import source.datamanager as dman
 import source.solver as solver
@@ -34,7 +33,6 @@ def folders(folderpath):
 def main():
 
     
-    tracemalloc.start()
 
 
 
@@ -76,7 +74,7 @@ def main():
     Enc_weight=FLAGS.Enc_weight, Adv_weight=FLAGS.Adv_weight, Con_weight=FLAGS.Con_weight)
     #Validation
     #solver.validation(neuralnet=neuralnet, dataset=dataset, split=FLAGS.Split)
-    #Testing
+    #Testing 
     folderpath = solver.test(folderpath ,paths, neuralnet=neuralnet, dataset=dataset,inlier_classes=FLAGS.Inlier_Classes,size=FLAGS.Outlier_size, Lgrad_weight=FLAGS.Lgrad_weight, \
     Enc_weight=FLAGS.Enc_weight, Adv_weight=FLAGS.Adv_weight, Con_weight=FLAGS.Con_weight)
     #Clusterng
@@ -91,19 +89,20 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=int, default=1, help='1 = MNIST, 2 = fMNIST, 3 = CIFAR10, 4 = CIFAR100')
     parser.add_argument('--datnorm', type=bool, default=True, help='Data normalization')
     parser.add_argument('--ksize', type=int, default=3, help='kernel size for constructing Neural Network')
-    parser.add_argument('--z_dim', type=int, default=128, help='Dimension of latent vector')
+    parser.add_argument('--z_dim', type=int, default=256, help='Dimension of latent vector')
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate for training')
-    parser.add_argument('--epoch', type=int, default=2, help='Training epoch')
+    parser.add_argument('--epoch', type=int, default=200, help='Training epoch')
     parser.add_argument('--batch', type=int, default=32, help='Mini batch size')
     parser.add_argument('--Inlier_Classes', type=int, default=[1], help='Inlier Classes')
     parser.add_argument('--Split', type=list, default = [0.5, 0.25, 0.25], help = 'Train/Valid/Test Split')
-    parser.add_argument('--Lgrad_weight', type=float, default=1, help='Weight for Lgrad')
+    parser.add_argument('--Lgrad_weight', type=float, default=12, help='Weight for Lgrad')
     parser.add_argument('--Enc_weight', type=float, default=1, help='Weight for Encoder')
     parser.add_argument('--Adv_weight', type=float, default=1, help='Weight for Adverserial')
-    parser.add_argument('--Con_weight', type=float, default=1, help='Weight for Contextual')
-    parser.add_argument('--Inlier_size', type=int, default=10000, help='Amount of data points in the normal class')
-    parser.add_argument('--Outlier_size', type=int, default=10000, help='Amount of data points in the abnormal class')
-    
+    parser.add_argument('--Con_weight', type=float, default=50, help='Weight for Contextual')
+    parser.add_argument('--Inlier_size', type=int, default=1500, help='Amount of data points in the normal class')
+    parser.add_argument('--Outlier_size', type=int, default=1500, help='Amount of data points in the abnormal class')
+    parser.add_argument('--LgradEncoder', type=int, default=1, help='Lgrad for enconder is activated')
+    parser.add_argument('--LgradDecoder', type=int, default=1, help='Lgrad for decoderis activated')
     
     FLAGS, unparsed = parser.parse_known_args()
 

@@ -76,9 +76,9 @@ class Dataset(object):
         x_tot = np.append(self.x_tr, self.x_te, axis=0)
         y_tot = np.append(self.y_tr, self.y_te, axis=0)
         
-        print("Inlier classes are:")
-        print(*inlier_classes)
-        print("Splitting dataset")
+        print("Inlier classes are:" %(inlier_classes))
+        
+        print("Splitting dataset...")
     
         
         x_normal, y_normal = None, None
@@ -95,18 +95,24 @@ class Dataset(object):
         indexListNormal = indexListNormal.astype(int)    
         x_normal, y_normal = x_tot[indexListNormal], y_tot[indexListNormal]
         
-        self.x_tr, self.y_tr = x_normal[:size], y_normal[:size]
+        l = len(x_normal)
+        h = int(np.floor(l*0.8))
+        k = int(np.floor(l*0.1))
+        t = int(np.floor(l*0.1))
         
-        self.x_vd, self.y_vd = x_normal[2*size:3*size], y_normal[2*size:3*size]
+        
+        
+        self.x_tr, self.y_tr = x_normal[:h], y_normal[:h]
+        self.x_vd, self.y_vd = x_normal[h:h+k], y_normal[h:h+k]
         
         
         
         classes = np.unique([y_tot])
-                
+        outlier_classes = [x for x in classes if x not in inlier_classes]        
         #print(rndm)
         indexListAbnormal = []
         
-        for label in classes:
+        for label in outlier_classes:
             indexes = np.where(y_tot==label)
             indexes = np.asarray(indexes)
             indexes = indexes.astype(int)
@@ -114,15 +120,21 @@ class Dataset(object):
             
         indexListNormal = np.unique([indexListNormal])
         indexListAbnormal = indexListAbnormal.astype(int)   
-        
+        indexListAbnormal = np.random.permutation(indexListAbnormal) #This is to ensure that the outlier classes are diversified
         x_abnormal, y_abnormal = x_tot[indexListAbnormal], y_tot[indexListAbnormal]
-        self.x_te, self.y_te = x_normal[3*size:4*size], y_normal[3*size:4*size]
         
-       
+        self.x_te, self.y_te = x_normal[h+k:h+k+t], y_normal[h+k:h+k+t]
         
-        self.x_te = np.append(self.x_te, x_abnormal[:2*size], axis = 0) #Adding abnormal 
-        self.y_te = np.append(self.y_te, y_abnormal[:2*size], axis = 0)
-
+        
+        
+        self.x_te = np.append(self.x_te, x_abnormal[:h], axis = 0) #Adding abnormal 
+        self.y_te = np.append(self.y_te, y_abnormal[:h], axis = 0)
+        l = len(self.x_tr)
+        h = len(self.x_vd)
+        k = len(self.x_te)
+        
+        print("Train %d Valid %d Test %d" %(l, h, k))
+               
         # k, l = 0, 0
         # for yidx, y in enumerate(y_tot):
             
@@ -155,10 +167,12 @@ class Dataset(object):
 
        
  
-
-    #TODO: Remake such that the validation set only contains inlier images - every datapoint should belong to only one set in the split.
-        
+   
     def reset_idx(self): self.idx_tr, self.idx_te = 0, 0
+
+    def datasetSize(self):
+        return self.x_tr.shape[0],self.x_vd.shape[0],self.x_te.shape[0]
+
 
     def next_train(self, batch_size=1, fix=False):
 
@@ -208,6 +222,10 @@ class Dataset(object):
         else: self.idx_vd = end
 
         
+        if(x_vd.shape[0] != batch_size):
+            x_vd, y_vd = self.x_vd[-1-batch_size:-1], self.y_vd[-1-batch_size:-1]
+            x_vd = np.expand_dims(x_vd, axis=3)
+
         
         if(self.normalize):
             min_x, max_x = x_vd.min(), x_vd.max()
