@@ -1,18 +1,15 @@
 import os, glob, inspect, time, math, torch
-
+import psutil
 import numpy as np
 import matplotlib.pyplot as plt
 import loss_functions as lfs
 import torch.nn.functional as func
 import pickle
-import math
+
 from sklearn.decomposition import PCA
 from sklearn.metrics import roc_curve, auc
 from torch.utils.tensorboard import SummaryWriter
-
-
 import utils as utils
-
 
 PACK_PATH = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
@@ -34,12 +31,7 @@ def HistogramsMSE(Data, labels, folderpath):
     plt.xlim(0, np.amax(Data))
     plt.title("Histograms of MSE")
     plt.legend(loc='upper right')
-
-    
-    plt.savefig(os.path.join(folderpath, "Multiple Histograms-MSE.png"))
-    plt.close()
-
-
+    plt.savefig(folderpath + "/Multiple Histograms-MSE.png")
 
 def HistogramsEnc(Data, labels, folderpath):
     differentLabels = np.unique(labels)
@@ -53,9 +45,7 @@ def HistogramsEnc(Data, labels, folderpath):
     plt.xlim(0, np.amax(Data))
     plt.title("Histograms of Enc")
     plt.legend(loc='upper right')
-
-    plt.savefig(os.path.join(folderpath,"Multiple Histograms-Enc.png"))
-    plt.close()
+    plt.savefig(folderpath +"/Multiple Histograms-Enc.png")
 
 
 def HistogramsAdv(Data, labels, folderpath):
@@ -70,10 +60,7 @@ def HistogramsAdv(Data, labels, folderpath):
     plt.xlim(0, np.amax(Data))
     plt.title("Histograms of Adv")
     plt.legend(loc='upper right')
-
-    plt.savefig(os.path.join(folderpath,"\Multiple Histograms-Adv.png"))
-    plt.close()
-
+    plt.savefig(folderpath + "/Multiple Histograms-Adv.png")
     
     
 def HistogramsGrad(Data, labels,folderpath):
@@ -86,12 +73,7 @@ def HistogramsGrad(Data, labels,folderpath):
     plt.title("Histograms of LGrad")
     plt.xlim(0, np.amax(Data))
     plt.legend(loc='upper right')
-
-    plt.savefig(os.path.join(folderpath,"Multiple Histograms-Lgrad.png"))
-    plt.close()
-
-
-
+    plt.savefig(folderpath + "/Multiple Histograms-Lgrad.png")
 
 def HistogramsCustomAnomaly(Data, labels,folderpath):
     differentLabels = np.unique(labels)
@@ -103,10 +85,7 @@ def HistogramsCustomAnomaly(Data, labels,folderpath):
     plt.title("Histograms of custom anomaly score")
     plt.xlim(0, np.amax(Data))
     plt.legend(loc='upper right')
-
-    plt.savefig(os.path.join(folderpath ,"Multiple Histograms-custom anomaly score.png"))
-    plt.close()
-
+    plt.savefig(folderpath + "/MultipleHistograms-customanomalyscore.png")
 
 
 def make_dir(path):
@@ -170,170 +149,97 @@ def latent_plot(latent, y, n,folderpathPCA):
     plt.grid()
     plt.tight_layout()
     
-
-    savename = 'PCAPlotOfLatentSpace.png'
-    plt.savefig(os.path.join(folderpathPCA, savename))
-
-
+    savename = '/PCAPlotOfLatentSpace.png'
+    plt.savefig(folderpathPCA + savename)
     plt.close()
 
-def boxplotMSE(contents,labels, folderpath):
+def boxplotMSE(contents, folderpath):
 
-    d = []
-    contents = np.asarray(contents)
-    contents = contents.T
-    
-   # for cidx, content in enumerate(contents):
-   #     data.append(content)
-    #    labels.append("class-%d" %(cidx))
-        
-    listLabels = np.unique(labels)
+    data, label = [], []
+    for cidx, content in enumerate(contents):
+        data.append(content)
+        label.append("class-%d" %(cidx))
 
-    for label in listLabels:
-        labelIndex = np.asarray(np.where(labels == label))[0]
-        d.append(contents[labelIndex].flatten())
-    
-    
-    fig, ax = plt.subplots()
-    ax.boxplot([d[0],d[1],d[2],d[3],d[4],d[5],d[6],d[7],d[8],d[9]])
-    
-  
-    #fig, ax1 = plt.subplots()
+    plt.clf()
+    fig, ax1 = plt.subplots()
     #bp = ax1.boxplot(data, showfliers=True, whis=3)
-
-    
-    plt.savefig(os.path.join(folderpath,"MSE.png"))
-
-    plt.close()
-    
-def boxplotEnc(contents,labels, folderpath):
-
-    d = []
-    contents = np.asarray(contents)
-    contents = contents.T
-    
-   # for cidx, content in enumerate(contents):
-   #     data.append(content)
-    #    labels.append("class-%d" %(cidx))
-        
-    listLabels = np.unique(labels)
-
-    for label in listLabels:
-        labelIndex = np.asarray(np.where(labels == label))[0]
-        d.append(contents[labelIndex].flatten())
-    
-    
-    fig, ax = plt.subplots()
-    ax.boxplot([d[0],d[1],d[2],d[3],d[4],d[5],d[6],d[7],d[8],d[9]])
-    
-  
-    #fig, ax1 = plt.subplots()
-    #bp = ax1.boxplot(data, showfliers=True, whis=3)
-
-    
-    plt.savefig(os.path.join(folderpath,"Enc.png"))
-
-    plt.close()
-
-def boxplotAdv(contents,labels, folderpath):
-
-    d = []
-    contents = np.asarray(contents)
-    contents = contents.T
-    
-   # for cidx, content in enumerate(contents):
-   #     data.append(content)
-    #    labels.append("class-%d" %(cidx))
-        
-    listLabels = np.unique(labels)
-
-    for label in listLabels:
-        labelIndex = np.asarray(np.where(labels == label))[0]
-        d.append(contents[labelIndex].flatten())
-    
-    
-    fig, ax = plt.subplots()
-    ax.boxplot([d[0],d[1],d[2],d[3],d[4],d[5],d[6],d[7],d[8],d[9]])
-    
-  
-    #fig, ax1 = plt.subplots()
-    #bp = ax1.boxplot(data, showfliers=True, whis=3)
-
-    
-    plt.savefig(os.path.join(folderpath,"Adv.png"))
-
     ax1.set_xticklabels(label, rotation=45)
 
+    plt.tight_layout()
+    plt.savefig(folderpath + "/MSE.png")
     plt.close()
+    
+def boxplotEnc(contents, folderpath):
 
-def boxplotGrad(contents,labels, folderpath):
+    data, label = [], []
+    for cidx, content in enumerate(contents):
+        data.append(content)
+        label.append("class-%d" %(cidx))
 
-    d = []
-    contents = np.asarray(contents)
-    contents = contents.T
-    
-   # for cidx, content in enumerate(contents):
-   #     data.append(content)
-    #    labels.append("class-%d" %(cidx))
-        
-    listLabels = np.unique(labels)
-
-    for label in listLabels:
-        labelIndex = np.asarray(np.where(labels == label))[0]
-        d.append(contents[labelIndex].flatten())
-    
-    
-    fig, ax = plt.subplots()
-    ax.boxplot([d[0],d[1],d[2],d[3],d[4],d[5],d[6],d[7],d[8],d[9]])
-    
-  
-    #fig, ax1 = plt.subplots()
+    plt.clf()
+    fig, ax1 = plt.subplots()
     #bp = ax1.boxplot(data, showfliers=True, whis=3)
-
-    
-    plt.savefig(os.path.join(folderpath,"Grad.png"))
-    plt.close()
-
     ax1.set_xticklabels(label, rotation=45)
 
+    plt.tight_layout()
+    plt.savefig(folderpath + "/Encoder.png")
+    plt.close()
+
+def boxplotAdv(contents, folderpath):
+
+    data, label = [], []
+    for cidx, content in enumerate(contents):
+        data.append(content)
+        label.append("class-%d" %(cidx))
+
+    plt.clf()
+    fig, ax1 = plt.subplots()
+    #bp = ax1.boxplot(data, showfliers=True, whis=3)
+    ax1.set_xticklabels(label, rotation=45)
+
+    plt.tight_layout()
+    plt.savefig(folderpath + "/Adverserial.png")
+    plt.close()
+
+def boxplotGrad(contents, folderpath):
+
+    data, label = [], []
+    for cidx, content in enumerate(contents):
+        data.append(content)
+        label.append("class-%d" %(cidx))
+
+    plt.clf()
+    fig, ax1 = plt.subplots()
+    #bp = ax1.boxplot(data, showfliers=True, whis=3)
+    ax1.set_xticklabels(label, rotation=45)
+
+    plt.tight_layout()
+    plt.savefig(folderpath + "/Lgrad.png")
     plt.close()    
 
 
 
+def boxplotCustomAnomaly(contents, folderpath):
 
-def boxplotCustomAnomaly(contents,labels, folderpath):
+    data, label = [], []
+    for cidx, content in enumerate(contents):
+        data.append(content)
+        label.append("class-%d" %(cidx))
 
-    d = []
-    contents = np.asarray(contents)
-    contents = contents.T
-    
-   # for cidx, content in enumerate(contents):
-   #     data.append(content)
-    #    labels.append("class-%d" %(cidx))
-        
-    listLabels = np.unique(labels)
+    plt.clf()
+    fig, ax1 = plt.subplots()
+   # bp = ax1.boxplot(data, showfliers=True, whis=3)
+    ax1.set_xticklabels(label, rotation=45)
 
-    for label in listLabels:
-        labelIndex = np.asarray(np.where(labels == label))[0]
-        d.append(contents[labelIndex].flatten())
-    
-    
-    fig, ax = plt.subplots()
-    ax.boxplot([d[0],d[1],d[2],d[3],d[4],d[5],d[6],d[7],d[8],d[9]])
-    
-  
-    #fig, ax1 = plt.subplots()
-    #bp = ax1.boxplot(data, showfliers=True, whis=3)
-    
-    plt.savefig(os.path.join(folderpath,"Customs .png"))
-
+    plt.tight_layout()
+    plt.savefig(folderpath + "/boxplot_custom_score.png")
     plt.close()
 
     
 def histogram(contents, savename=""):
 
-    n1, _, _ = plt.hist(contents[0], bins=300, alpha=0.5, label='Normal')
-    n2, _, _ = plt.hist(contents[1], bins=300, alpha=0.5, label='Abnormal')
+    n1, _, _ = plt.hist(contents[0], bins=100, alpha=0.5, label='Normal')
+    n2, _, _ = plt.hist(contents[1], bins=100, alpha=0.5, label='Abnormal')
     h_inter = np.sum(np.minimum(n1, n2)) / np.sum(n1)
     plt.xlabel("MSE")
     plt.ylabel("Number of Data")
@@ -341,9 +247,7 @@ def histogram(contents, savename=""):
     plt.xlim(0, xmax)
     plt.text(x=xmax*0.01, y=max(n1.max(), n2.max()), s="Histogram Intersection: %.3f" %(h_inter))
     plt.legend(loc='upper right')
-
-    plt.savefig(os.path.join(savename ,"Master_histogram.png"))
-
+    plt.savefig(savename + "/Master_histogram.png")
     plt.close()
 
 def save_graph( folderpath, contents, xlabel, ylabel, savename):
@@ -385,7 +289,7 @@ def roc(labels, scores, folderpath, name):
     plt.figure()
     lw = 2
     plt.plot(fpr, tpr, color='darkorange', lw=lw, label='(AUC = %0.2f, EER = %0.2f)' % (roc_auc, eer))
-    plt.plot([1-eer], [eer], marker='o', markersize=5, color="navy")
+    plt.plot([eer], [1-eer], marker='o', markersize=5, color="navy")
     plt.plot([0, 1], [1, 0], color='navy', lw=1, linestyle=':')
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
@@ -420,7 +324,6 @@ def training(modelpath, folderpath, neuralnet, dataset, epochs, batch_size,size,
     ref_grad_enc = []
     ref_grad_dec = []
     
-    batch_iterations = int(np.floor(dataset.datasetSize()[0]/test_size))
     
     for name, param in neuralnet.encoder.named_parameters():
         if name.endswith('weight'):
@@ -433,7 +336,7 @@ def training(modelpath, folderpath, neuralnet, dataset, epochs, batch_size,size,
    #         layer_grad.avg = torch.zeros_like(param)
    #         ref_grad_dec.append(layer_grad)
     AUC = 0
-    validation_error =  math.inf
+    validation_error = 0
     for epoch in range(epochs):
 
         x_tr, x_tr_torch, y_tr, y_tr_torch, _ = dataset.next_train(batch_size=test_size, fix=True) # Initial batch
@@ -455,18 +358,7 @@ def training(modelpath, folderpath, neuralnet, dataset, epochs, batch_size,size,
 
      
         batch_iter = 0
-        if(epoch % 10 == 0 and epoch > 1):
-                
-                
-                AUC_new, validation_error_new = validation(neuralnet, dataset,size, Lgrad_weight, Enc_weight, Adv_weight, Con_weight)
-                
-                
-                if(validation_error_new > validation_error): #This indicates overfitting. It performs worse on the test-set
-                    print("Validation error is increasing - indicating overfitting. Cancelling training.")
-                    break
-                else:
-                    validation_error = validation_error_new
-        while(batch_iter < batch_iterations):
+        while(batch_iter < 32):
             batch_iter = batch_iter + 1
            
             x_tr, x_tr_torch, y_tr, y_tr_torch, terminator = dataset.next_train(batch_size)
@@ -518,7 +410,7 @@ def training(modelpath, folderpath, neuralnet, dataset, epochs, batch_size,size,
             
             
             if(ref_grad_enc[0].count == 0):
-              
+              print("Inside ref_grad count")
               grad_loss = torch.FloatTensor([0.0]).to(device)
             else:
                 for name, param in neuralnet.encoder.named_parameters():
@@ -585,9 +477,24 @@ def training(modelpath, folderpath, neuralnet, dataset, epochs, batch_size,size,
                 
             
             
+            print("Batch iteration is: ")
+            print(batch_iter)
             
+            print("Percentage of RAM available memory")
+            print(psutil.virtual_memory().available * 100 / psutil.virtual_memory().total)
+
+            #current, peak = tracemalloc.get_traced_memory()
+
+     #       print("Current memory usage is MB")
+      #      print(current/10**6)
+       #     print("Peak was MB")
+        #    print(peak/10**6)
             
-            
+            if(torch.cuda.is_available()):
+                
+                print('GPU Memory Usage:')
+                print('Allocated:', round(torch.cuda.memory_allocated(0)/1024**3,1), 'GB')
+                print('Cached:   ', round(torch.cuda.memory_reserved(0)/1024**3,1), 'GB')
               
             list_enc.append(l_enc.item())
             list_con.append(l_con.item())
@@ -603,13 +510,23 @@ def training(modelpath, folderpath, neuralnet, dataset, epochs, batch_size,size,
             
             
             
-            
+            if(epoch % 10 == 0 and epoch > 1):
+                
+                
+                AUC_new, validation_error_new = validation(neuralnet, dataset,size, Lgrad_weight, Enc_weight, Adv_weight, Con_weight)
+                
+                
+                if(validation_error_new < validation_error and validation_error != 0): #This indicates overfitting. It performs worse on the test-set
+                    print("Validation error is increasing - indicating overfitting. Cancelling training.")
+                    break
+                else:
+                    validation_error = validation_error_new
                 
                 
         
 
-        print("Epoch [%d / %d]  Enc:%.3f, Con:%.3f, Adv:%.3f, Grad:%3f, Total:%.3f" \
-            %(epoch+1, epochs, l_enc, l_con, l_adv,grad_loss, l_tot))
+        print("Epoch [%d / %d] (%d iteration)  Enc:%.3f, Con:%.3f, Adv:%.3f, Grad:%3f, Total:%.3f" \
+            %(epoch, epochs, iteration, l_enc, l_con, l_adv,grad_loss, l_tot))
         del l_tot, l_con, l_adv, l_enc
         del x_tr_copy, x_hat_copy, x_hat
         del z_code, z_code_hat
@@ -652,7 +569,7 @@ def validation(neuralnet, dataset, size, Lgrad_weight, Enc_weight, Adv_weight, C
     device = torch.device("cuda" if (torch.cuda.is_available()) else "cpu")
     
     test_size = 32
-    epochs = int(np.floor(dataset.datasetSize()[1]/test_size))
+    epochs = int(np.floor(size/test_size))
    
     
    
@@ -824,6 +741,8 @@ def test(modelpath, folderpath,  paths, neuralnet, dataset, inlier_classes, size
 
     print("\nTest...")
     
+    epochs = int(np.floor(3*size/2))
+
     
     
     
@@ -833,30 +752,27 @@ def test(modelpath, folderpath,  paths, neuralnet, dataset, inlier_classes, size
     #########################################################################
     label = []
     
-    scores_normal = np.zeros(0)
+    scores_normal = []
     
-    scores_abnormal = np.zeros(0)
+    scores_abnormal = []
     
-    scores_con = np.zeros(0)
+    scores_con = []
     
-    scores_enc = np.zeros(0)
+    scores_enc = []
     
-    scores_adv = np.zeros(0)
+    scores_adv = []
     
-    scores_grad = np.zeros(0)
+    scores_grad = []
     
-    scores_custom = np.zeros(0)
+    scores_custom = []
    
     nlayer = 32
     batch_iter = 0
-    test_size = 32
     
-    batch_iterations = int(np.floor(dataset.datasetSize()[2]/test_size))
     z_code_tot, y_te_tot = None, None
     
     
     print("Collection of Lgrad")
-    print("Batch iteration to be done: %d" %(batch_iterations))
     #########################################################################
     #Inference stage - for collecting Lgrad weights and subsequent clustering
     #########################################################################
@@ -865,14 +781,12 @@ def test(modelpath, folderpath,  paths, neuralnet, dataset, inlier_classes, size
     
    # labels = [] #Contains labels for y_te
     
-    for batch_iter in range(batch_iterations):
+    for epoch in range(epochs):
+        x_te, x_te_torch, y_te, y_te_torch, terminator = dataset.next_test(32) # y_te does not used in this prj.
         
-        x_te, x_te_torch, y_te, y_te_torch, terminator = dataset.next_test(batch_size=test_size) # y_te does not used in this prj.
-        perc = int((batch_iter/batch_iterations)*100)
-        print("\nTesting - %d percent done " %(perc))
         if(len(x_te.shape) == 5):
-            x_te = x_te.reshape(32,32,32,3)
-            x_te_torch = x_te_torch.reshape(32,32,32,3)
+            x_te = x_te.reshape(2,32,32,3)
+            x_te_torch = x_te_torch.reshape(2,32,32,3)
             x_te_torch = x_te_torch.permute(0,3,2,1)
         z_code = neuralnet.encoder(x_te_torch.to(neuralnet.device))
         x_hat = neuralnet.decoder(z_code.to(neuralnet.device))
@@ -903,15 +817,16 @@ def test(modelpath, folderpath,  paths, neuralnet, dataset, inlier_classes, size
             label.append(y_te[k])
             
         
-        scores_con = np.append(scores_con, l_con.detach().numpy(), axis = 0)
-        scores_enc = np.append(scores_enc, l_enc.detach().numpy(), axis = 0)
-        scores_adv = np.append(scores_adv, l_adv.detach().numpy(), axis = 0)
-        #scores_enc.append(l_enc.detach().numpy())
-        #scores_con.append(l_con.detach().numpy())
-        #scores_adv.append(l_adv.detach().numpy())
+        
+        scores_enc.append(l_enc.detach().numpy())
+        scores_con.append(l_con.detach().numpy())
+        scores_adv.append(l_adv.detach().numpy())
         
         
         
+        print("Batch iteration is")
+        print(batch_iter)
+        batch_iter = batch_iter + 1
         
         if(z_code_tot is None):
             z_code_tot = z_code.detach()
@@ -1022,7 +937,10 @@ def test(modelpath, folderpath,  paths, neuralnet, dataset, inlier_classes, size
         del dis_x, features_real, dis_x_hat, features_fake, y_te, y_te_torch, recon_loss
             
 
- 
+
+
+
+    
     scores_normal = np.asarray(scores_normal)
     scores_abnormal = np.asarray(scores_abnormal)
     normal_avg, normal_std = np.average(scores_normal), np.std(scores_normal)
@@ -1063,14 +981,14 @@ def test(modelpath, folderpath,  paths, neuralnet, dataset, inlier_classes, size
     print("Adv Created")
   
     print("Creation of box plots")
-    contents = [scores_con.reshape(-1)]
-    boxplotMSE(contents, label, folderpathBoxPlots)
+    contents = [scores_con.reshape(-1), label]
+    boxplotMSE(contents, folderpathBoxPlots)
     print("MSE Created")
-    contents = [scores_enc.reshape(-1) ]
-    boxplotEnc(contents, label, folderpathBoxPlots)
+    contents = [scores_enc.reshape(-1), label]
+    boxplotEnc(contents, folderpathBoxPlots)
     print("Enc Created")
-    contents = [scores_adv.reshape(-1)]
-    boxplotAdv(contents, label, folderpathBoxPlots)
+    contents = [scores_adv.reshape(-1), label]
+    boxplotAdv(contents, folderpathBoxPlots)
     print("Adv Created")
     
     target_grad_list_dec = np.array(target_grad_list_dec)
