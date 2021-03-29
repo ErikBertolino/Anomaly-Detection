@@ -8,7 +8,7 @@ from sklearn.utils import shuffle
 
 class Dataset(object):
 
-    def __init__(self, normalize, data, inlier_classes, size):
+    def __init__(self, normalize, data, inlier_classes,outlier_classes, size):
         #Nota Bene: data is an integer: 1,2,3, or 4
         print("\nInitializing Dataset...")
 
@@ -39,7 +39,7 @@ class Dataset(object):
         self.x_tr = np.ndarray.astype(self.x_tr, np.float32)
         self.x_te = np.ndarray.astype(self.x_te, np.float32)
 
-        self.split_dataset(inlier_classes, size, data)
+        self.split_dataset(inlier_classes,outlier_classes, size, data)
 
         self.num_tr, self.num_te = self.x_tr.shape[0], self.x_te.shape[0]
         self.idx_tr, self.idx_te, self.idx_vd = 0, 0, 0
@@ -64,7 +64,7 @@ class Dataset(object):
         print("Normalization: %r" %(self.normalize))
         if(self.normalize): print("(from %.3f-%.3f to %.3f-%.3f)" %(self.min_val, self.max_val, 0, 1))
 
-    def split_dataset(self, inlier_classes, size, data):
+    def split_dataset(self, inlier_classes, outlier_classes, size, data):
         
         #Train - contains solely inliers
         
@@ -106,34 +106,63 @@ class Dataset(object):
         self.x_vd, self.y_vd = x_normal[h:h+k], y_normal[h:h+k]
         
         
-        
-        classes = np.unique([y_tot])
-        outlier_classes = [x for x in classes if x not in inlier_classes]        
-        #print(rndm)
-        indexListAbnormal = []
-        
-        for label in outlier_classes:
-            indexes = np.where(y_tot==label)
-            indexes = np.asarray(indexes)
-            indexes = indexes.astype(int)
-            indexListAbnormal = np.append(indexListAbnormal,indexes)
+        if (len(outlier_classes) > 0):
+            #classes = np.unique([y_tot])
+            #outlier_classes = [x for x in classes if x not in inlier_classes]        
+            #print(rndm)
+            indexListAbnormal = []
             
-        indexListNormal = np.unique([indexListNormal])
-        indexListAbnormal = indexListAbnormal.astype(int)   
-        indexListAbnormal = np.random.permutation(indexListAbnormal) #This is to ensure that the outlier classes are diversified
-        x_abnormal, y_abnormal = x_tot[indexListAbnormal], y_tot[indexListAbnormal]
-        
-        self.x_te, self.y_te = x_normal[h+k:h+k+t], y_normal[h+k:h+k+t]
-        
-        
-        
-        self.x_te = np.append(self.x_te, x_abnormal[:h], axis = 0) #Adding abnormal 
-        self.y_te = np.append(self.y_te, y_abnormal[:h], axis = 0)
-        l = len(self.x_tr)
-        h = len(self.x_vd)
-        k = len(self.x_te)
-        
-        print("Train %d Valid %d Test %d" %(l, h, k))
+            for label in outlier_classes:
+                indexes = np.where(y_tot==label)
+                indexes = np.asarray(indexes)
+                indexes = indexes.astype(int)
+                indexListAbnormal = np.append(indexListAbnormal,indexes)
+                
+            indexListNormal = np.unique([indexListNormal])
+            indexListAbnormal = indexListAbnormal.astype(int)   
+            indexListAbnormal = np.random.permutation(indexListAbnormal) #This is to ensure that the outlier classes are diversified
+            x_abnormal, y_abnormal = x_tot[indexListAbnormal], y_tot[indexListAbnormal]
+            
+            self.x_te, self.y_te = x_normal[h+k:h+k+t], y_normal[h+k:h+k+t]
+            
+            
+            
+            self.x_te = np.append(self.x_te, x_abnormal[:t], axis = 0) #Adding abnormal 
+            self.y_te = np.append(self.y_te, y_abnormal[:t], axis = 0)
+            l = len(self.x_tr)
+            h = len(self.x_vd)
+            k = len(self.x_te)
+            
+            print("Train %d Valid %d Test %d" %(l, h, k))
+            
+        if (len(outlier_classes) == 0):
+            classes = np.unique([y_tot])
+            outlier_classes = [x for x in classes if x not in inlier_classes]        
+            #print(rndm)
+            indexListAbnormal = []
+            
+            for label in outlier_classes:
+                indexes = np.where(y_tot==label)
+                indexes = np.asarray(indexes)
+                indexes = indexes.astype(int)
+                indexListAbnormal = np.append(indexListAbnormal,indexes)
+                
+            indexListNormal = np.unique([indexListNormal])
+            indexListAbnormal = indexListAbnormal.astype(int)   
+            indexListAbnormal = np.random.permutation(indexListAbnormal) #This is to ensure that the outlier classes are diversified
+            x_abnormal, y_abnormal = x_tot[indexListAbnormal], y_tot[indexListAbnormal]
+            
+            self.x_te, self.y_te = x_normal[h+k:h+k+t], y_normal[h+k:h+k+t]
+            
+            
+            
+            self.x_te = np.append(self.x_te, x_abnormal[:t], axis = 0) #Adding abnormal 
+            self.y_te = np.append(self.y_te, y_abnormal[:t], axis = 0)
+            l = len(self.x_tr)
+            h = len(self.x_vd)
+            k = len(self.x_te)
+            
+            print("Train %d Valid %d Test %d" %(l, h, k))    
                
         # k, l = 0, 0
         # for yidx, y in enumerate(y_tot):
