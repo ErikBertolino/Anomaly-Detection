@@ -40,6 +40,7 @@ class NeuralNet(nn.Module):
             else:
                 self.params = self.params + list(model.parameters())
         self.optimizer = optim.Adam(self.params, lr=self.learning_rate)
+    
 
 class Flatten(nn.Module):
     def forward(self, input):
@@ -95,6 +96,9 @@ class Encoder(nn.Module):
         z_code = z_code.contiguous()
         
         return z_code
+    
+   
+    
 
 class Decoder(nn.Module):
 
@@ -159,6 +163,8 @@ class Decoder(nn.Module):
         for name in self.model.named_parameters():
             layer_names.append(name)
         return layers
+    
+        
 
 class Discriminator(nn.Module):
 

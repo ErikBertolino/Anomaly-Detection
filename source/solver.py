@@ -5,19 +5,75 @@ import matplotlib.pyplot as plt
 import loss_functions as lfs
 import torch.nn.functional as func
 import pickle
-
+import torch.nn as nn
+from EDGE_4_4_1 import EDGE
 from sklearn.decomposition import PCA
 from sklearn.metrics import roc_curve, auc
 from torch.utils.tensorboard import SummaryWriter
-
-
+import collections
+import multiprocessing as mp
+from functools import partial
+import psutil
 import utils as utils
-
+import gc
 
 PACK_PATH = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 from scipy.optimize import brentq
 from scipy.interpolate import interp1d
+
+
+#def save_activation(activations, name, mod, inp, out):
+#    activations[name].append(out.cpu())
+    
+#    return activations
+
+def calculateMutualInformation(activations):
+    
+    l = len(activations.keys())
+    iterationList = []
+    for i in range(l):
+        iterationList.append([i,i+1])
+    MI = []
+    
+    for count_1, name_1 in enumerate(activations.keys()):
+        for count_2, name_2 in enumerate(activations.keys()):
+            if(count_1 + 1 == count_2):
+                print(count_1)
+                
+                try:
+                    
+                    L_1 = torch.stack(activations[name_1])
+                    L_2 = torch.stack(activations[name_2])
+                    l_1 = L_1.shape
+                    l_2 = L_2.shape
+                    N_X = np.prod(l_1[:2])
+                    N_Y = np.prod(l_2[:2])
+                    D_X = np.prod(l_1[2:])
+                    D_Y = np.prod(l_2[2:])
+                
+                    L_1 = L_1.reshape([N_X,D_X])
+                    L_2 = L_2.reshape([N_Y,D_Y])
+                
+
+                    if(N_X == N_Y):
+                        MI.append(EDGE(L_1.numpy(),L_2.numpy()))
+                except:
+                    k = 1
+                
+       
+    return MI
+
+def plotInformationPlane(Entropies,folderpath):
+    
+    epochs = len(Entropies)
+    layers = Entropies[0].shape[0]
+    
+    
+    
+    
+    plt.savefig(os.path.join(folderpath, "Information_Plane_plot.png"))
+    plt.close()
 
 
 def HistogramsMSE(Data, labels, folderpath):
@@ -434,10 +490,10 @@ def roc(labels, scores, folderpath, name):
 
 
 
-def training(modelpath, folderpath, neuralnet, dataset, epochs, batch_size,size, LgradSettings, Lgrad_weight,  Enc_weight, Adv_weight, Con_weight):
-
+def training(modelpath, folderpath, neuralnet, dataset, epochs, batch_size,size, LgradSettings, Lgrad_weight,  Enc_weight, Adv_weight, Con_weight, mutualinformation):
+    HiddenLayerActivations = []
     torch.float32
-    
+    intVar=2
     device = torch.device("cuda" if (torch.cuda.is_available()) else "cpu")
     print("\nTraining to %d epochs (%d of minibatch size)" %(epochs, batch_size))
 
@@ -467,28 +523,47 @@ def training(modelpath, folderpath, neuralnet, dataset, epochs, batch_size,size,
             ref_grad_dec.append(layer_grad)
     
     validation_error =  math.inf
+    if(mutualinformation==1):
+        global activations 
+        activations = collections.defaultdict(list)
+        mutualEntropyMatrix = []
+    def save_activation(name, mod, inp, out):
+            try:
+                activations[name].append(out.cpu().detach())
+                del out
+            except:
+                d = 1
+                
+            #print(len(out[0]))
+            #print(len(out[0][0]))
+            #print(len(out[0][0]))
+            #print(len(out[0][0][0]))
+            #activations[name].append(out[0].detach())
+            #activations[name].append(out[1].detach())
+            
+           
+
+    #def get_activation(name):
+    #    def hook(m, inp, out):
+    #        activations[name] = out.detach()
+    #    return hook
+    
+    for name, m in neuralnet.named_modules():
+        m.register_forward_hook(partial(save_activation, name))
     for epoch in range(epochs):
-
-        x_tr, x_tr_torch, y_tr, y_tr_torch, _ = dataset.next_train(batch_size=test_size, fix=True) # Initial batch
-
-        if(len(x_tr.shape) == 5):
-            x_tr_torch = torch.squeeze(x_tr_torch)
-            x_tr_torch = x_tr_torch.permute(0,3,2,1)
-            #Shorten the length of the vector.
-        
-
-
-        z_code = neuralnet.encoder(x_tr_torch.to(neuralnet.device))
-        x_hat = neuralnet.decoder(z_code.to(neuralnet.device))
-        z_code_hat = neuralnet.encoder(x_hat.to(neuralnet.device))
-        
-         
-        dis_x, features_real = neuralnet.discriminator(x_tr_torch.to(neuralnet.device))
-        dis_x_hat, features_fake = neuralnet.discriminator(x_hat.to(neuralnet.device))
-
-     
+        gc.collect()
         batch_iter = 0
-        if(epoch % 3 == 0 and epoch > 1):
+        
+        if(epoch > 1 and mutualinformation==1):
+            #calculateMutualInformation(activations)
+            if(epoch > 1 and epoch % intVar == 0):
+                pool = mp.Pool(processes=intVar)
+                result = pool.map(calculateMutualInformation,  HiddenLayerActivations)
+                mutualEntropyMatrix.append(result)
+                activations = collections.defaultdict(list)            
+                HiddenLayerActivations = []
+ 
+        if(epoch % 3 == 0 and epoch > 10):
                 
                 
                 validation_error_new = validation(neuralnet, dataset,size, Lgrad_weight, Enc_weight, Adv_weight, Con_weight)
@@ -501,30 +576,34 @@ def training(modelpath, folderpath, neuralnet, dataset, epochs, batch_size,size,
                     validation_error = validation_error_new
         while(batch_iter < batch_iterations):
             batch_iter = batch_iter + 1
-           
+            
             x_tr, x_tr_torch, y_tr, y_tr_torch, terminator = dataset.next_train(batch_size)
             if(len(x_tr.shape) == 5):
                 x_tr_torch = torch.squeeze(x_tr_torch)
                 x_tr_torch = x_tr_torch.permute(0,3,2,1)
             
           
-            z_code = neuralnet.encoder(x_tr_torch.to(neuralnet.device))
-           
-            x_hat = neuralnet.decoder(z_code.to(neuralnet.device))
-           
-            z_code_hat = neuralnet.encoder(x_hat.to(neuralnet.device))
-           
-
-            dis_x, features_real = neuralnet.discriminator(x_tr_torch.to(neuralnet.device))
             
+            
+            z_code = neuralnet.encoder(x_tr_torch.to(neuralnet.device))
+            gc.collect()
+            x_hat = neuralnet.decoder(z_code.to(neuralnet.device))
+            gc.collect()
+            
+            z_code_hat = neuralnet.encoder(x_hat.to(neuralnet.device))
+            gc.collect()
+            dis_x, features_real = neuralnet.discriminator(x_tr_torch.to(neuralnet.device))
+            gc.collect()
             dis_x_hat, features_fake = neuralnet.discriminator(x_hat.to(neuralnet.device))
-           
-
+            gc.collect()
+            
             l_tot, l_enc, l_con, l_adv = \
                 lfs.loss_ganomaly(z_code, z_code_hat, x_tr_torch, x_hat, \
                 dis_x, dis_x_hat, features_real, features_fake,  Lgrad_weight, Enc_weight, Adv_weight, Con_weight, False)
-           
-            
+            del z_code, z_code_hat
+            del dis_x, features_real
+            del dis_x_hat, features_fake
+            gc.collect()
             x_hat_copy = x_hat.clone()
             x_hat_copy = x_hat_copy.permute(0,2,3,1)
            # x_tr_copy = x_tr.clone().detach()
@@ -532,30 +611,38 @@ def training(modelpath, folderpath, neuralnet, dataset, epochs, batch_size,size,
             x_tr_copy = torch.from_numpy(x_tr)
       
         
-
+            gc.collect()
             x_tr_copy.requires_grad = True
             x_tr_copy = x_tr_copy.to(neuralnet.device)
             if(len(x_tr_copy) == 5):
                 x_tr_copy = torch.squeeze(x_tr_copy)
-            recon_loss = func.mse_loss(x_tr_copy,x_hat_copy)
+            
            
           
             
-            if(LgradSettings > 0):          
+            if(LgradSettings > 0): 
+                recon_loss = func.mse_loss(x_tr_copy,x_hat_copy)
                 #This is for evaluation of gradloss, which is a bit more cumbersome.
                 nlayer = 16
                 grad_loss = 0
                 target_grad = 0
                 k = 0
+                del x_tr_copy, x_hat_copy, x_hat
+
+                del x_tr, x_tr_torch
+                #for name, m in neuralnet.encoder.named_modules():
+               #     if type(m)==nn.Conv2d:
+        # partial to assign the layer name to each hook
+                #        m.register_forward_hook(partial(save_activation, name))
                 
-                
+     
                 if(LgradSettings > 0):
                     if(ref_grad_enc[0].count == 0):
                       grad_loss = torch.FloatTensor([0.0]).to(device)
                     else:
                         for name, param in neuralnet.encoder.named_parameters():
                             if name.endswith('weight') and LgradSettings in [1,3]:
-                          
+                                #neuralnet.encoder.register_forward_hook(get_activation('en_conv'))
                                 target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
                                 target_grad = target_grad.contiguous()
                                 #ref_grad_enc[k].contiguous()
@@ -580,13 +667,15 @@ def training(modelpath, folderpath, neuralnet, dataset, epochs, batch_size,size,
                             if j == nlayer:  break
                         # print("Gradloss in decoder is")
                         # print(grad_loss)
-                   
-                
-                
+                        del recon_loss
+                        grad_loss = grad_loss/nlayer
+                        l_tot = l_tot + grad_loss
             
             
-            grad_loss = grad_loss/nlayer
-            l_tot = l_tot + grad_loss
+            
+            
+            
+            
             neuralnet.optimizer.zero_grad()
             #l_tot.backward(retain_graph = True)
             l_tot.backward()
@@ -625,27 +714,61 @@ def training(modelpath, folderpath, neuralnet, dataset, epochs, batch_size,size,
             list_con.append(l_con.item())
             list_adv.append(l_adv.item())
             list_tot.append(l_tot.item())
-            list_grad.append(grad_loss)
+            #list_grad.append(grad_loss)
             
             writer.add_scalar('GANomaly/restore_error', l_enc.item(), iteration)
             writer.add_scalar('GANomaly/restore_error', l_con.item(), iteration)
             writer.add_scalar('GANomaly/kl_divergence', l_adv.item(), iteration)
-            writer.add_scalar('GANomaly/L_grad', grad_loss, iteration)
+            #writer.add_scalar('GANomaly/L_grad', grad_loss, iteration)
             writer.add_scalar('GANomaly/loss_total', l_tot.item(), iteration)
             
+
             
+ 
+                #except:
+                #    print(type(m))
+                #    print(name)
+                      
+                
             
             
                 
                 
         
-
-        print("Epoch [%d / %d]  Enc:%.3f, Con:%.3f, Adv:%.3f, Grad:%3f, Total:%.3f" \
-            %(epoch+1, epochs, l_enc, l_con, l_adv,grad_loss, l_tot))
+#        activations = {name: torch.cat(outputs, 0) for name, outputs in activations.items()}
+#        for k,v in activations.items():
+ #           print (k, v.size())
+        print("Epoch [%d / %d]  Enc:%.3f, Con:%.3f, Adv:%.3f, Total:%.3f" \
+            %(epoch+1, epochs, l_enc, l_con, l_adv,  l_tot))
+        #activations = {name: torch.cat(outputs, 0) for name, outputs in activations.items()}
+        
         del l_tot, l_con, l_adv, l_enc
-        del x_tr_copy, x_hat_copy, x_hat
-        del z_code, z_code_hat
+
             
+           
+            #print(name)
+#            m.encoder.register_forward_hook(get_activation('enconder.en_conv.0'))
+                #if type(m)==nn.Conv2d:
+               # try:
+#        mutualEntropyMatrix.append(calculateMutualInformation(activations))
+        #import multiprocessing as mp
+        
+       # nprocs = mp.cpu_count()
+       # print(f"Number of CPU cores: {nprocs}")
+        #nprocsUsed = nprocs-14
+       # pool = mp.Pool(processes=nprocsUsed)
+       # result = pool.map(calculateMutualInformation, activations)
+        
+        
+
+        
+      #  activations = {name: torch.cat(outputs, 0) for name, outputs in activations.items()}
+      
+
+        if(mutualinformation==1):
+            HiddenLayerActivations.append(activations) 
+
+        
 
     elapsed_time = time.time() - start_time
     print("Elapsed: "+str(elapsed_time))
@@ -660,8 +783,10 @@ def training(modelpath, folderpath, neuralnet, dataset, epochs, batch_size,size,
     with open(os.path.join(modelpath, "ref_grad_enc.pkl"), "wb") as f:
         pickle.dump(ref_grad_enc, f)
     with open(os.path.join(modelpath, "ref_grad_dec.pkl"), "wb") as f:
-        pickle.dump(ref_grad_dec, f)        
-            
+        pickle.dump(ref_grad_dec, f)     
+    if(mutualinformation==1):    
+        with open(os.path.join(modelpath, "MutualInformation.pkl"), "wb") as f:
+            pickle.dump(mutualEntropyMatrix,f)
     
 
     for idx_m, model in enumerate(neuralnet.models):
@@ -793,6 +918,8 @@ def test(modelpath, folderpath,  paths, neuralnet, dataset, inlier_classes, size
     
     scores_grad = np.zeros(0)
     
+    scores_Encgrad = np.zeros(0)
+    
     scores_custom = np.zeros(0)
     
     scores_gradMagEnc = np.zeros(0)
@@ -822,6 +949,7 @@ def test(modelpath, folderpath,  paths, neuralnet, dataset, inlier_classes, size
     lastLayerEnc = []
     firstLayerDec = [] 
     lastLayerDec = []
+    EncLayer = []
    # labels = [] #Contains labels for y_te
     
     for batch_iter in range(batch_iterations):
@@ -855,8 +983,93 @@ def test(modelpath, folderpath,  paths, neuralnet, dataset, inlier_classes, size
         x_te_copy.requires_grad = True
         
         x_te_copy = x_te_copy.to(neuralnet.device)
+        l = len(y_te)
         
+        #if(y_te[1] in inlier_classes): 
+         #   scores_normal= np.append(scores_normal, l_tot.detach().numpy()[1]) #This has to be edited, should be able to take a whole list of inlier classes!
         
+       # else:
+       #     scores_abnormal = np.append(scores_abnormal, l_tot.detach().numpy()[1])
+        
+        #for loop here
+        #move recon_loss here, taking each slice each iteration
+        for k in range(l):                        
+            recon_loss = func.mse_loss(x_te_copy[k],x_hat_copy[k])
+            enc_loss = func.mse_loss(z_code[k],z_code_hat[k])
+            nlayer = 16
+            grad_loss = 0
+            target_grad = 0
+        #This is for the first data point!
+            
+            t,gradMagEnc,gradMagDec = 0, 0, 0
+            for name, param in neuralnet.encoder.named_parameters():
+                if name.endswith('weight'):
+                    target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
+                    #if(t == 7):
+                    #    latentLayer.append(np.asarray(target_grad.detach().cpu().view(-1)))
+                    if(t == 0):
+                        firstLayerEnc.append(np.asarray(target_grad.detach().cpu().view(-1)))
+                    if(t == 15):
+                        lastLayerEnc.append(np.asarray(target_grad.detach().cpu().view(-1)))
+                    gradMagEnc = gradMagEnc + torch.norm(target_grad, p=2).item()
+                    #LayersEnc[t].append(np.asarray(target_grad.detach().cpu().view(-1)))
+#                   target_grad_list_enc.append(target_grad.detach().cpu())
+                    target_grad = target_grad.contiguous()
+                    grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_enc[t].avg.view(-1,1), dim = 0).item()
+                    del target_grad
+                    torch.cuda.empty_cache()
+                    t = t + 1                 
+                  #  target_grad = torch.autograd.grad(enc_loss, param, create_graph = True)[0]
+                  #  if(t == 0):
+                 #       EncLayer.append(np.asarray(target_grad.detach().cpu().view(-1)))
+                 #   if(t == 15):
+                 #       EncLayer.append(np.asarray(target_grad.detach().cpu().view(-1)))
+                #    del target_grad
+                    torch.cuda.empty_cache()
+                if t == nlayer: break
+               # print("Gradloss in encoder is")
+               # print(grad_loss)
+            l = 0
+            
+            for name, param in neuralnet.decoder.named_parameters():
+                if name.endswith('weight'):
+                    target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
+                    gradMagDec = gradMagDec + torch.norm(target_grad, p=2).item()
+                   # LayersDec[l].append(np.asarray(target_grad.detach().cpu().view(-1)))
+                    if(l == 0):
+                        firstLayerDec.append(np.asarray(target_grad.detach().cpu().view(-1)))
+                    if(l == 15):
+                        lastLayerDec.append(np.asarray(target_grad.detach().cpu().view(-1)))
+#                   target_grad_list_enc.append(target_grad.detach().cpu())
+                    target_grad = target_grad.contiguous()
+                    grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_dec[l].avg.view(-1,1), dim = 0).item()
+                    del target_grad
+                    torch.cuda.empty_cache()
+                    target_grad = torch.autograd.grad(enc_loss, param, create_graph = True)[0]
+                 #   if(t == 0):
+                 #       EncLayer.append(np.asarray(target_grad.detach().cpu().view(-1)))
+                    if(t == 15):
+                        EncLayer.append(np.asarray(target_grad.detach().cpu().view(-1)))
+                    del target_grad
+                    torch.cuda.empty_cache()
+                    l = l + 1                  
+                if l == nlayer: break
+            
+            
+            grad_loss = grad_loss/nlayer
+            
+            scores_gradMagEnc = np.append(scores_gradMagEnc,gradMagEnc)
+            
+            scores_gradMagDec = np.append(scores_gradMagDec,gradMagDec)
+            
+            scores_grad = np.append(scores_grad,grad_loss)      
+        
+          #  scores_Encgrad = np.append(scores_Encgrad)
+
+               
+                
+        
+       
         l = len(y_te)
         for k in range(l):
             label.append(y_te[k])
@@ -892,77 +1105,6 @@ def test(modelpath, folderpath,  paths, neuralnet, dataset, inlier_classes, size
             else:
                 scores_abnormal = np.append(scores_abnormal, l_tot.detach().numpy()[0])
         
-        #if(y_te[1] in inlier_classes): 
-         #   scores_normal= np.append(scores_normal, l_tot.detach().numpy()[1]) #This has to be edited, should be able to take a whole list of inlier classes!
-        
-       # else:
-       #     scores_abnormal = np.append(scores_abnormal, l_tot.detach().numpy()[1])
-        
-        #for loop here
-        #move recon_loss here, taking each slice each iteration
-        for k in range(l):                        
-            recon_loss = func.mse_loss(x_te_copy[k],x_hat_copy[k])
-            nlayer = 16
-            grad_loss = 0
-            target_grad = 0
-        #This is for the first data point!
-            
-            t,gradMagEnc,gradMagDec = 0, 0, 0
-            for name, param in neuralnet.encoder.named_parameters():
-                if name.endswith('weight'):
-                    target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
-                    #if(t == 7):
-                    #    latentLayer.append(np.asarray(target_grad.detach().cpu().view(-1)))
-                    if(t == 0):
-                        firstLayerEnc.append(np.asarray(target_grad.detach().cpu().view(-1)))
-                    if(t == 15):
-                        lastLayerEnc.append(np.asarray(target_grad.detach().cpu().view(-1)))
-                    gradMagEnc = gradMagEnc + torch.norm(target_grad, p=2).item()
-                    #LayersEnc[t].append(np.asarray(target_grad.detach().cpu().view(-1)))
-#                   target_grad_list_enc.append(target_grad.detach().cpu())
-                    target_grad = target_grad.contiguous()
-                    grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_enc[t].avg.view(-1,1), dim = 0).item()
-                    del target_grad
-                    torch.cuda.empty_cache()
-                    t = t + 1                  
-                if t == nlayer: break
-               # print("Gradloss in encoder is")
-               # print(grad_loss)
-            l = 0
-            
-            for name, param in neuralnet.decoder.named_parameters():
-                if name.endswith('weight'):
-                    target_grad = torch.autograd.grad(recon_loss, param, create_graph = True)[0]
-                    gradMagDec = gradMagDec + torch.norm(target_grad, p=2).item()
-                   # LayersDec[l].append(np.asarray(target_grad.detach().cpu().view(-1)))
-                    if(l == 0):
-                        firstLayerDec.append(np.asarray(target_grad.detach().cpu().view(-1)))
-                    if(l == 15):
-                        lastLayerDec.append(np.asarray(target_grad.detach().cpu().view(-1)))
-#                   target_grad_list_enc.append(target_grad.detach().cpu())
-                    target_grad = target_grad.contiguous()
-                    grad_loss = grad_loss + -1*func.cosine_similarity(target_grad.view(-1,1), ref_grad_dec[l].avg.view(-1,1), dim = 0).item()
-                    del target_grad
-                    torch.cuda.empty_cache()
-                    l = l + 1                  
-                if l == nlayer: break
-            
-            
-            grad_loss = grad_loss/nlayer
-            
-            scores_gradMagEnc = np.append(scores_gradMagEnc,gradMagEnc)
-            
-            scores_gradMagDec = np.append(scores_gradMagDec,gradMagDec)
-            
-            scores_grad = np.append(scores_grad,grad_loss)      
-        
-        
-        
-
-               
-                
-        
-       
             
         scores_custom = np.append(scores_custom, (np.asarray(grad_loss*4 + l_tot.detach().numpy())))
 
@@ -1042,6 +1184,10 @@ def test(modelpath, folderpath,  paths, neuralnet, dataset, inlier_classes, size
     torch.save(firstLayerDec, os.path.join(folderPathClustering,'firstLayerDec.pt'))
     
     torch.save(lastLayerDec, os.path.join(folderPathClustering,'lastLayerDec.pt'))
+    
+    torch.save(EncLayer, os.path.join(folderPathClustering,'EncLayer.pt'))
+    
+    
     
     #torch.save(label, os.path.join(folderpath,'labels.csv'))
 
